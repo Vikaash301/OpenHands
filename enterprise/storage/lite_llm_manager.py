@@ -86,7 +86,6 @@ class LiteLlmManager:
         org_id: str,
         keycloak_user_id: str,
         user_settings: UserSettings,
-        keycloak_user_info: dict,
     ) -> UserSettings | None:
         logger.info(
             'SettingsStore:umigrate_lite_llm_entries:start',

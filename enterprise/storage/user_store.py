@@ -112,7 +112,9 @@ class UserStore:
             from storage.lite_llm_manager import LiteLlmManager
 
             await LiteLlmManager.migrate_entries(
-                str(org.id), user_id, decrypted_user_settings, user_info
+                str(org.id),
+                user_id,
+                decrypted_user_settings,
             )
 
             # avoids circular reference. This migrate method is temprorary until all users are migrated.
@@ -255,7 +257,6 @@ class UserStore:
                 from server.auth.token_manager import TokenManager
 
                 token_manager = TokenManager()
-                token_manager.get_user_info_from_user_id(user_id)
                 user_info = call_async_from_sync(
                     token_manager.get_user_info_from_user_id,
                     GENERAL_TIMEOUT,
