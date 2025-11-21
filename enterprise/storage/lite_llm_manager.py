@@ -290,6 +290,10 @@ class LiteLlmManager:
                 'teams': [LITE_LLM_TEAM_ID],
                 'auto_create_key': False,
                 'send_invite_email': False,
+                'metadata': {
+                    'version': ORG_SETTINGS_VERSION,
+                    'model': get_default_litellm_model(),
+                },
             },
         )
         if not response.is_success:
@@ -310,6 +314,10 @@ class LiteLlmManager:
                     'teams': [LITE_LLM_TEAM_ID],
                     'auto_create_key': False,
                     'send_invite_email': False,
+                    'metadata': {
+                        'version': ORG_SETTINGS_VERSION,
+                        'model': get_default_litellm_model(),
+                    },
                 },
             )
 
@@ -351,17 +359,9 @@ class LiteLlmManager:
             logger.warning('LiteLLM API configuration not found')
             return
 
-        # Base payload
         payload = {
             'user_id': keycloak_user_id,
-            'metadata': {
-                'version': ORG_SETTINGS_VERSION,
-                'model': get_default_litellm_model(),
-            },
         }
-
-        # Merge caller-supplied kwargs into payload
-        # (caller can override fields if they want)
         payload.update(kwargs)
 
         response = await client.post(
@@ -391,7 +391,6 @@ class LiteLlmManager:
             logger.warning('LiteLLM API configuration not found')
             return
 
-        # Base payload
         payload = {
             'key': key,
         }
