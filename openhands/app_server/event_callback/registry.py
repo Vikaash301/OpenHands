@@ -15,7 +15,7 @@ def register_event_callback_processor(cls: T) -> T:
     REGISTERED_EVENT_CALLBACK_PROCESSORS[cls.__name__] = cls
     # Force rebuild of discriminated union so Pydantic sees the new type
 
-    subclasses = get_known_concrete_subclasses(cls)
+    subclasses = get_known_concrete_subclasses(EventCallbackProcessor)
 
     print('known classes', subclasses)
     print([subclass.__name__ for subclass in subclasses])
