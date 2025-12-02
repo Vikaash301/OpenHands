@@ -772,12 +772,16 @@ class LiveStatusAppConversationService(AppConversationServiceBase):
         # Set up secrets for git provider
         secrets = await self._setup_secrets_for_git_provider(git_provider, user)
 
-        # Configure LLM and MCP
+        # Enhance system message suffix with available secret names
+        enhanced_system_message_suffix = self._format_secrets_info(
+            secrets, system_message_suffix
+        )
+
         llm, mcp_config = await self._configure_llm_and_mcp(user, llm_model)
 
         # Create agent with context
         agent = self._create_agent_with_context(
-            llm, agent_type, system_message_suffix, mcp_config
+            llm, agent_type, enhanced_system_message_suffix, mcp_config
         )
 
         # Finalize and return the conversation request

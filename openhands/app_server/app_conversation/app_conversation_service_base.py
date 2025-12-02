@@ -126,6 +126,38 @@ class AppConversationServiceBase(AppConversationService, ABC):
 
         return agent
 
+    def _format_secrets_info(self, secrets: dict, existing_suffix: str | None) -> str:
+        """Format secret names into system message suffix.
+
+        Args:
+            secrets: Dictionary of secrets (key -> SecretSource)
+            existing_suffix: Optional existing system message suffix
+
+        Returns:
+            Enhanced system message suffix with secret information
+        """
+        if not secrets:
+            return existing_suffix or ''
+
+        # Extract secret names and sort them for consistent output
+        secret_names = sorted(secrets.keys())
+
+        # Format the secrets section
+        secrets_list = '\n'.join(f'- {name}' for name in secret_names)
+        secrets_section = f"""<AVAILABLE_SECRETS>
+The following secrets are available as environment variables:
+{secrets_list}
+
+When a user asks about a secret value explicitly or even implicitly, use `echo $SECRET_NAME` to retrieve it.
+
+If the secrets are hidden, you must tell the user that the secrets are hidden and they cannot provide explicit values for them.
+</AVAILABLE_SECRETS>"""
+
+        # Append to existing suffix if present, otherwise return just the secrets section
+        if existing_suffix:
+            return f'{existing_suffix}\n\n{secrets_section}'
+        return secrets_section
+
     async def _load_skills_and_update_agent(
         self,
         sandbox: SandboxInfo,
