@@ -8,7 +8,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Literal
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from openhands.agent_server.utils import OpenHandsUUID, utc_now
 from openhands.app_server.event_callback.event_callback_result_models import (
@@ -36,7 +36,7 @@ class EventCallbackStatus(Enum):
     ERROR = 'ERROR'
 
 
-class EventCallbackProcessor(BaseModel, ABC):
+class EventCallbackProcessor(DiscriminatedUnionMixin, ABC):
     @abstractmethod
     async def __call__(
         self,
