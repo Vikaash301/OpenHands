@@ -44,8 +44,6 @@ from openhands.server.middleware import (  # noqa: E402
 )
 from openhands.server.static import SPAStaticFiles  # noqa: E402
 
-# Import enterprise integrations to register callback processors with the discriminated union system
-import integrations  # noqa: E402, F401
 
 directory = os.getenv('FRONTEND_DIRECTORY', './frontend/build')
 
