@@ -4,7 +4,7 @@ from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
 
-from openhands.agent_server.models import SendMessageRequest
+from openhands.agent_server.models import OpenHandsModel, SendMessageRequest
 from openhands.agent_server.utils import OpenHandsUUID, utc_now
 from openhands.app_server.event_callback.event_callback_models import (
     EventCallbackProcessor,
@@ -88,7 +88,7 @@ class AppConversationPage(BaseModel):
     next_page_id: str | None = None
 
 
-class AppConversationStartRequest(BaseModel):
+class AppConversationStartRequest(OpenHandsModel):
     """Start conversation request object.
 
     Although a user can go directly to the sandbox and start conversations, they
