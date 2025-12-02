@@ -315,31 +315,34 @@ class SlackManager(Manager):
                     f'[Slack] Created conversation {conversation_id} for user {user_info.slack_display_name}'
                 )
 
-                if not isinstance(slack_view, SlackUpdateExistingConversationView):
+                # Only add SlackCallbackProcessor for new conversations (not updates) and non-v1 conversations
+                if not isinstance(slack_view, SlackUpdateExistingConversationView) and not slack_view.v1:
                     # We don't re-subscribe for follow up messages from slack.
                     # Summaries are generated for every messages anyways, we only need to do
                     # this subscription once for the event which kicked off the job.
                     
-                    # Only add SlackCallbackProcessor if the conversation is not v1
-                    if not slack_view.v1:
-                        processor = SlackCallbackProcessor(
-                            slack_user_id=slack_view.slack_user_id,
-                            channel_id=slack_view.channel_id,
-                            message_ts=slack_view.message_ts,
-                            thread_ts=slack_view.thread_ts,
-                            team_id=slack_view.team_id,
-                        )
+                    processor = SlackCallbackProcessor(
+                        slack_user_id=slack_view.slack_user_id,
+                        channel_id=slack_view.channel_id,
+                        message_ts=slack_view.message_ts,
+                        thread_ts=slack_view.thread_ts,
+                        team_id=slack_view.team_id,
+                    )
 
-                        # Register the callback processor
-                        register_callback_processor(conversation_id, processor)
+                    # Register the callback processor
+                    register_callback_processor(conversation_id, processor)
 
-                        logger.info(
-                            f'[Slack] Created callback processor for conversation {conversation_id}'
-                        )
-                    else:
-                        logger.info(
-                            f'[Slack] Skipping callback processor for v1 conversation {conversation_id}'
-                        )
+                    logger.info(
+                        f'[Slack] Created callback processor for conversation {conversation_id}'
+                    )
+                elif isinstance(slack_view, SlackUpdateExistingConversationView):
+                    logger.info(
+                        f'[Slack] Skipping callback processor for existing conversation update {conversation_id}'
+                    )
+                elif slack_view.v1:
+                    logger.info(
+                        f'[Slack] Skipping callback processor for v1 conversation {conversation_id}'
+                    )
 
                 msg_info = slack_view.get_response_msg()
 
