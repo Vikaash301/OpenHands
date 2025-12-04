@@ -23,6 +23,7 @@ from openhands.app_server.app_conversation.app_conversation_models import (
     SendMessageRequest,
 )
 from openhands.app_server.config import get_app_conversation_service
+from openhands.app_server.sandbox.sandbox_models import SandboxStatus
 from openhands.app_server.services.injector import InjectorState
 from openhands.app_server.user.specifiy_user_context import USER_CONTEXT_ATTR
 from openhands.core.logger import openhands_logger as logger
@@ -459,33 +460,44 @@ class SlackUpdateExistingConversationView(SlackNewConversationView):
             )
 
             # 2. Sandbox lookup + validation
-            sandbox = ensure_running_sandbox(
-                await sandbox_service.get_sandbox(app_conversation_info.sandbox_id),
-                app_conversation_info.sandbox_id,
+            sandbox = await sandbox_service.get_sandbox(
+                app_conversation_info.sandbox_id
             )
 
+            try:
+                running_sandbox = ensure_running_sandbox(
+                    sandbox, app_conversation_info.sandbox_id
+                )
+            except RuntimeError as e:
+                if sandbox and sandbox.status == SandboxStatus.PAUSED:
+                    await sandbox_service.resume_sandbox(
+                        app_conversation_info.sandbox_id
+                    )
+                    running_sandbox = ensure_running_sandbox(
+                        sandbox, app_conversation_info.sandbox_id
+                    )
+                else:
+                    raise e
+
             assert (
-                sandbox.session_api_key is not None
-            ), f'No session API key for sandbox: {sandbox.id}'
+                running_sandbox.session_api_key is not None
+            ), f'No session API key for sandbox: {running_sandbox.id}'
 
             # 3. Get the agent server URL
-            agent_server_url = get_agent_server_url_from_sandbox(sandbox)
+            agent_server_url = get_agent_server_url_from_sandbox(running_sandbox)
 
             # 4. Prepare the message content
             user_msg, _ = self._get_instructions(jinja)
 
             # 5. Create the message request
             send_message_request = SendMessageRequest(
-                role='user',
-                content=[TextContent(text=user_msg)],
-                run=True
+                role='user', content=[TextContent(text=user_msg)], run=True
             )
 
             # 6. Send the message to the agent server
             url = f'{agent_server_url.rstrip("/")}/api/conversations/{UUID(self.conversation_id)}/events'
 
-
-            headers = {'X-Session-API-Key': sandbox.session_api_key}
+            headers = {'X-Session-API-Key': running_sandbox.session_api_key}
             payload = send_message_request.model_dump()
 
             try:
