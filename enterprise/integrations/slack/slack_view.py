@@ -478,6 +478,7 @@ class SlackUpdateExistingConversationView(SlackNewConversationView):
                 )
             except RuntimeError as e:
                 if sandbox and sandbox.status == SandboxStatus.PAUSED:
+                    logger.info('[Slack V1]: Attmpting to resume paused sandbox')
                     await sandbox_service.resume_sandbox(
                         app_conversation_info.sandbox_id
                     )
