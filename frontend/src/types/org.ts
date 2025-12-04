@@ -4,6 +4,7 @@ export interface Organization {
   id: string;
   name: string;
   balance: number;
+  is_personal?: boolean;
 }
 
 export interface OrganizationMember {

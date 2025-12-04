@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { QueryClientProvider } from "@tanstack/react-query";
 import SettingsScreen, { clientLoader } from "#/routes/settings";
 import OptionService from "#/api/option-service/option-service.api";
+import { organizationService } from "#/api/organization-service/organization-service.api";
 
 // Mock the i18next hook
 vi.mock("react-i18next", async () => {
@@ -76,6 +77,16 @@ describe("Settings Screen", () => {
         {
           Component: () => <div data-testid="api-keys-settings-screen" />,
           path: "/settings/api-keys",
+        },
+        {
+          Component: () => (
+            <div data-testid="organization-members-settings-screen" />
+          ),
+          path: "/settings/organization-members",
+        },
+        {
+          Component: () => <div data-testid="organization-settings-screen" />,
+          path: "/settings/org",
         },
       ],
     },
@@ -192,4 +203,108 @@ describe("Settings Screen", () => {
   });
 
   it.todo("should not be able to access oss-only routes in saas mode");
+
+  describe("Personal org vs team org visibility", () => {
+    it("should not show Organization and Organization Members settings items when personal org is selected", async () => {
+      vi.spyOn(organizationService, "getOrganizations").mockResolvedValue([
+        { id: "1", name: "Personal Workspace", balance: 100 },
+      ]);
+      vi.spyOn(organizationService, "getMe").mockResolvedValue({
+        id: "99",
+        email: "me@test.com",
+        role: "user",
+        status: "active",
+      });
+
+      renderSettingsScreen();
+
+      const navbar = await screen.findByTestId("settings-navbar");
+
+      // Organization and Organization Members should NOT be visible for personal org
+      expect(
+        within(navbar).queryByText("Organization Members"),
+      ).not.toBeInTheDocument();
+      expect(
+        within(navbar).queryByText("Organization"),
+      ).not.toBeInTheDocument();
+    });
+
+    it("should not show Billing settings item when team org is selected", async () => {
+      vi.spyOn(organizationService, "getOrganizations").mockResolvedValue([
+        { id: "2", name: "Acme Corp", balance: 1000 },
+      ]);
+      vi.spyOn(organizationService, "getMe").mockResolvedValue({
+        id: "99",
+        email: "me@test.com",
+        role: "admin",
+        status: "active",
+      });
+
+      renderSettingsScreen();
+
+      const navbar = await screen.findByTestId("settings-navbar");
+
+      // Billing should NOT be visible for team orgs
+      expect(
+        within(navbar).queryByText("Billing", { exact: false }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("should not allow direct URL access to /settings/org when personal org is selected", async () => {
+      vi.spyOn(organizationService, "getOrganizations").mockResolvedValue([
+        { id: "1", name: "Personal Workspace", balance: 100 },
+      ]);
+      vi.spyOn(organizationService, "getMe").mockResolvedValue({
+        id: "99",
+        email: "me@test.com",
+        role: "admin",
+        status: "active",
+      });
+
+      renderSettingsScreen("/settings/org");
+
+      // Should redirect away from org settings for personal org
+      expect(
+        screen.queryByTestId("organization-settings-screen"),
+      ).not.toBeInTheDocument();
+    });
+
+    it("should not allow direct URL access to /settings/organization-members when personal org is selected", async () => {
+      vi.spyOn(organizationService, "getOrganizations").mockResolvedValue([
+        { id: "1", name: "Personal Workspace", balance: 100 },
+      ]);
+      vi.spyOn(organizationService, "getMe").mockResolvedValue({
+        id: "99",
+        email: "me@test.com",
+        role: "admin",
+        status: "active",
+      });
+
+      renderSettingsScreen("/settings/organization-members");
+
+      // Should redirect away from organization-members settings for personal org
+      expect(
+        screen.queryByTestId("organization-members-settings-screen"),
+      ).not.toBeInTheDocument();
+    });
+
+    it("should not allow direct URL access to /settings/billing when team org is selected", async () => {
+      vi.spyOn(organizationService, "getOrganizations").mockResolvedValue([
+        { id: "2", name: "Acme Corp", balance: 1000 },
+      ]);
+      vi.spyOn(organizationService, "getMe").mockResolvedValue({
+        id: "99",
+        email: "me@test.com",
+        role: "admin",
+        status: "active",
+      });
+
+      renderSettingsScreen("/settings/billing");
+
+      // Should redirect away from billing settings for team org
+      expect(
+        screen.queryByTestId("billing-settings-screen"),
+      ).not.toBeInTheDocument();
+    });
+  });
 });

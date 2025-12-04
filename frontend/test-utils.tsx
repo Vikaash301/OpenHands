@@ -83,16 +83,29 @@ export const selectOrganization = async ({
 }: {
   orgIndex: number;
 }) => {
-  const organizationSelect = await screen.findByTestId("org-selector");
-  expect(organizationSelect).toBeInTheDocument();
-
-  await userEvent.click(organizationSelect);
-
-  // Wait for the options to appear in the popover
   const targetOrg = INITIAL_MOCK_ORGS[orgIndex];
   if (!targetOrg) {
     expect.fail(`No organization found at index ${orgIndex}`);
   }
+
+  // Wait for orgs to load and auto-select to happen (first org gets auto-selected)
+  const organizationSelect = await screen.findByTestId("org-selector");
+  expect(organizationSelect).toBeInTheDocument();
+
+  // Wait until the selector is not loading anymore
+  await waitFor(() => {
+    expect(organizationSelect).not.toBeDisabled();
+  });
+
+  // If selecting org index 0, it should already be auto-selected
+  if (orgIndex === 0) {
+    await waitFor(() => {
+      expect(organizationSelect).toHaveValue(targetOrg.name);
+    });
+    return;
+  }
+
+  await userEvent.click(organizationSelect);
 
   // Find the option by its text content (organization name)
   const option = await screen.findByText(targetOrg.name);

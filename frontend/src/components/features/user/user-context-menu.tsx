@@ -11,6 +11,8 @@ import {
 import { useLogout } from "#/hooks/mutation/use-logout";
 import { OrganizationUserRole } from "#/types/org";
 import { useClickOutsideElement } from "#/hooks/use-click-outside-element";
+import { useOrganizations } from "#/hooks/query/use-organizations";
+import { useSelectedOrganizationId } from "#/context/use-selected-organization";
 import { cn } from "#/utils/utils";
 import { InviteOrganizationMemberModal } from "../org/invite-organization-member-modal";
 import { OrgSelector } from "../org/org-selector";
@@ -55,7 +57,12 @@ export function UserContextMenu({ type, onClose }: UserContextMenuProps) {
   const navigate = useNavigate();
   const { mutate: logout } = useLogout();
   const { data: config } = useConfig();
+  const { data: organizations } = useOrganizations();
+  const { orgId } = useSelectedOrganizationId();
   const ref = useClickOutsideElement<HTMLDivElement>(onClose);
+
+  const selectedOrg = organizations?.find((org) => org.id === orgId);
+  const isPersonalOrg = selectedOrg?.is_personal ?? false;
 
   const isOss = config?.APP_MODE === "oss";
   // Filter out organization members/org nav items since they're already handled separately in the menu
@@ -115,7 +122,7 @@ export function UserContextMenu({ type, onClose }: UserContextMenuProps) {
           <OrgSelector />
         </div>
 
-        {!isUser && (
+        {!isUser && !isPersonalOrg && (
           <>
             <TempButton
               onClick={handleInviteMemberClick}

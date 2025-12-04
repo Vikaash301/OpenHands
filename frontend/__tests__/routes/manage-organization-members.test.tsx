@@ -94,10 +94,9 @@ describe("Manage Team Route", () => {
     renderManageOrganizationMembers();
     await screen.findByTestId("manage-organization-members-settings");
 
-    expect(getOrganizationMembersSpy).not.toHaveBeenCalled();
-
+    // First org is auto-selected, so members are fetched for org "1"
     await selectOrganization({ orgIndex: 1 }); // Acme Corp
-    expect(getOrganizationMembersSpy).toHaveBeenCalledExactlyOnceWith({
+    expect(getOrganizationMembersSpy).toHaveBeenLastCalledWith({
       orgId: "2",
     });
   });

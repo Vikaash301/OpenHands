@@ -243,6 +243,49 @@ describe("UserContextMenu", () => {
     expect(onCloseMock).toHaveBeenCalledTimes(3);
   });
 
+  describe("Personal org vs team org visibility", () => {
+    it("should not show Organization and Organization Members settings items when personal org is selected", async () => {
+      vi.spyOn(organizationService, "getOrganizations").mockResolvedValue([
+        { id: "1", name: "Personal Workspace", balance: 100, is_personal: true },
+      ]);
+      vi.spyOn(organizationService, "getMe").mockResolvedValue({
+        id: "99",
+        email: "me@test.com",
+        role: "admin",
+        status: "active",
+      });
+
+      renderUserContextMenu({ type: "admin", onClose: vi.fn });
+
+      // Wait for orgs to load, then verify buttons are hidden for personal org
+      await waitFor(() => {
+        expect(
+          screen.queryByText("ORG$MANAGE_ORGANIZATION_MEMBERS"),
+        ).not.toBeInTheDocument();
+      });
+      expect(screen.queryByText("ORG$MANAGE_ACCOUNT")).not.toBeInTheDocument();
+    });
+
+    it("should not show Billing settings item when team org is selected", async () => {
+      vi.spyOn(organizationService, "getOrganizations").mockResolvedValue([
+        { id: "2", name: "Acme Corp", balance: 1000 },
+      ]);
+      vi.spyOn(organizationService, "getMe").mockResolvedValue({
+        id: "99",
+        email: "me@test.com",
+        role: "admin",
+        status: "active",
+      });
+
+      renderUserContextMenu({ type: "admin", onClose: vi.fn });
+
+      // Billing should NOT be visible for team orgs
+      expect(
+        screen.queryByText("SETTINGS$NAV_BILLING"),
+      ).not.toBeInTheDocument();
+    });
+  });
+
   it("should render the invite user modal when Invite Organization Member is clicked", async () => {
     const inviteMembersBatchSpy = vi.spyOn(
       organizationService,

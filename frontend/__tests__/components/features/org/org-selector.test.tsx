@@ -26,7 +26,7 @@ describe("OrgSelector", () => {
     renderOrgSelector();
 
     const selector = screen.getByTestId("org-selector");
-    expect(selector).toHaveAttribute("aria-busy", "true");
+    expect(selector).toBeDisabled();
   });
 
   it("should select the first organization after orgs are loaded", async () => {
