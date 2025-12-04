@@ -269,7 +269,7 @@ class GithubIssue(ResolverViewInterface):
 
     def _create_github_v1_callback_processor(self):
         """Create a V1 callback processor for GitHub integration."""
-        from openhands.app_server.event_callback.github_v1_callback_processor import (
+        from integrations.github.github_v1_callback_processor import (
             GithubV1CallbackProcessor,
         )
 
@@ -400,7 +400,7 @@ class GithubInlinePRComment(GithubPRComment):
 
     def _create_github_v1_callback_processor(self):
         """Create a V1 callback processor for GitHub integration."""
-        from openhands.app_server.event_callback.github_v1_callback_processor import (
+        from integrations.github.github_v1_callback_processor import (
             GithubV1CallbackProcessor,
         )
 
