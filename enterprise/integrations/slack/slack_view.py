@@ -37,7 +37,7 @@ from openhands.server.services.conversation_service import (
     initialize_conversation,
     setup_init_conversation_settings,
 )
-from openhands.server.shared import conversation_manager
+from openhands.server.shared import ConversationStoreImpl, config, conversation_manager
 from openhands.server.user_auth.user_auth import UserAuth
 from openhands.storage.data_models.conversation_metadata import (
     ConversationMetadata,
@@ -391,6 +391,14 @@ class SlackUpdateExistingConversationView(SlackNewConversationView):
         user_id = user_info.keycloak_user_id
         saas_user_auth: UserAuth = self.saas_user_auth
         provider_tokens = await saas_user_auth.get_provider_tokens()
+
+        try:
+            conversation_store = await ConversationStoreImpl.get_instance(
+                config, user_id
+            )
+            await conversation_store.get_metadata(self.conversation_id)
+        except FileNotFoundError:
+            raise StartingConvoException('Conversation no longer exists.')
 
         # Should we raise here if there are no provider tokens?
         providers_set = list(provider_tokens.keys()) if provider_tokens else []
