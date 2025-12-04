@@ -198,23 +198,20 @@ class TestGithubV1CallbackProcessor:
     # Successful paths
     # ------------------------------------------------------------------ #
 
-    @patch.dict(
-        os.environ,
-        {
-            'GITHUB_APP_CLIENT_ID': 'test_client_id',
-            'GITHUB_APP_PRIVATE_KEY': 'test_private_key',
-        },
+    @patch(
+        'integrations.github.github_v1_callback_processor.GITHUB_APP_CLIENT_ID',
+        'test_client_id',
+    )
+    @patch(
+        'integrations.github.github_v1_callback_processor.GITHUB_APP_PRIVATE_KEY',
+        'test_private_key',
     )
     @patch('openhands.app_server.config.get_app_conversation_info_service')
     @patch('openhands.app_server.config.get_sandbox_service')
     @patch('openhands.app_server.config.get_httpx_client')
-    @patch(
-        'openhands.app_server.event_callback.github_v1_callback_processor.get_prompt_template'
-    )
-    @patch(
-        'openhands.app_server.event_callback.github_v1_callback_processor.GithubIntegration'
-    )
-    @patch('openhands.app_server.event_callback.github_v1_callback_processor.Github')
+    @patch('integrations.github.github_v1_callback_processor.get_prompt_template')
+    @patch('integrations.github.github_v1_callback_processor.GithubIntegration')
+    @patch('integrations.github.github_v1_callback_processor.Github')
     async def test_successful_callback_execution(
         self,
         mock_github,
@@ -288,23 +285,20 @@ class TestGithubV1CallbackProcessor:
         assert kwargs['headers']['X-Session-API-Key'] == 'test_api_key'
         assert kwargs['json']['question'] == 'Please provide a summary'
 
-    @patch.dict(
-        os.environ,
-        {
-            'GITHUB_APP_CLIENT_ID': 'test_client_id',
-            'GITHUB_APP_PRIVATE_KEY': 'test_private_key',
-        },
+    @patch(
+        'integrations.github.github_v1_callback_processor.GITHUB_APP_CLIENT_ID',
+        'test_client_id',
+    )
+    @patch(
+        'integrations.github.github_v1_callback_processor.GITHUB_APP_PRIVATE_KEY',
+        'test_private_key',
     )
     @patch('openhands.app_server.config.get_app_conversation_info_service')
     @patch('openhands.app_server.config.get_sandbox_service')
     @patch('openhands.app_server.config.get_httpx_client')
-    @patch(
-        'openhands.app_server.event_callback.github_v1_callback_processor.get_prompt_template'
-    )
-    @patch(
-        'openhands.app_server.event_callback.github_v1_callback_processor.GithubIntegration'
-    )
-    @patch('openhands.app_server.event_callback.github_v1_callback_processor.Github')
+    @patch('integrations.github.github_v1_callback_processor.get_prompt_template')
+    @patch('integrations.github.github_v1_callback_processor.GithubIntegration')
+    @patch('integrations.github.github_v1_callback_processor.Github')
     async def test_successful_inline_pr_comment(
         self,
         mock_github,
@@ -362,6 +356,7 @@ class TestGithubV1CallbackProcessor:
     # Error paths
     # ------------------------------------------------------------------ #
 
+    @patch('integrations.github.github_v1_callback_processor.get_prompt_template')
     @patch('openhands.app_server.config.get_httpx_client')
     @patch('openhands.app_server.config.get_sandbox_service')
     @patch('openhands.app_server.config.get_app_conversation_info_service')
@@ -370,6 +365,7 @@ class TestGithubV1CallbackProcessor:
         mock_get_app_conversation_info_service,
         mock_get_sandbox_service,
         mock_get_httpx_client,
+        mock_get_prompt_template,
         conversation_state_update_event,
         event_callback,
         mock_app_conversation_info,
@@ -379,6 +375,8 @@ class TestGithubV1CallbackProcessor:
             github_view_data={}, should_request_summary=True
         )
         conversation_id = uuid4()
+
+        mock_get_prompt_template.return_value = 'Please provide a summary'
 
         await _setup_happy_path_services(
             mock_get_app_conversation_info_service,
@@ -399,6 +397,7 @@ class TestGithubV1CallbackProcessor:
         assert 'Missing installation ID' in result.detail
 
     @patch.dict(os.environ, {}, clear=True)
+    @patch('integrations.github.github_v1_callback_processor.get_prompt_template')
     @patch('openhands.app_server.config.get_httpx_client')
     @patch('openhands.app_server.config.get_sandbox_service')
     @patch('openhands.app_server.config.get_app_conversation_info_service')
@@ -407,6 +406,7 @@ class TestGithubV1CallbackProcessor:
         mock_get_app_conversation_info_service,
         mock_get_sandbox_service,
         mock_get_httpx_client,
+        mock_get_prompt_template,
         github_callback_processor,
         conversation_state_update_event,
         event_callback,
@@ -414,6 +414,8 @@ class TestGithubV1CallbackProcessor:
         mock_sandbox_info,
     ):
         conversation_id = uuid4()
+
+        mock_get_prompt_template.return_value = 'Please provide a summary'
 
         await _setup_happy_path_services(
             mock_get_app_conversation_info_service,
@@ -433,12 +435,13 @@ class TestGithubV1CallbackProcessor:
         assert result.status == EventCallbackResultStatus.ERROR
         assert 'GitHub App credentials are not configured' in result.detail
 
-    @patch.dict(
-        os.environ,
-        {
-            'GITHUB_APP_CLIENT_ID': 'test_client_id',
-            'GITHUB_APP_PRIVATE_KEY': 'test_private_key',
-        },
+    @patch(
+        'integrations.github.github_v1_callback_processor.GITHUB_APP_CLIENT_ID',
+        'test_client_id',
+    )
+    @patch(
+        'integrations.github.github_v1_callback_processor.GITHUB_APP_PRIVATE_KEY',
+        'test_private_key',
     )
     @patch('openhands.app_server.config.get_app_conversation_info_service')
     @patch('openhands.app_server.config.get_sandbox_service')
@@ -484,19 +487,18 @@ class TestGithubV1CallbackProcessor:
         assert result.status == EventCallbackResultStatus.ERROR
         assert 'Sandbox not running' in result.detail
 
-    @patch.dict(
-        os.environ,
-        {
-            'GITHUB_APP_CLIENT_ID': 'test_client_id',
-            'GITHUB_APP_PRIVATE_KEY': 'test_private_key',
-        },
+    @patch(
+        'integrations.github.github_v1_callback_processor.GITHUB_APP_CLIENT_ID',
+        'test_client_id',
+    )
+    @patch(
+        'integrations.github.github_v1_callback_processor.GITHUB_APP_PRIVATE_KEY',
+        'test_private_key',
     )
     @patch('openhands.app_server.config.get_app_conversation_info_service')
     @patch('openhands.app_server.config.get_sandbox_service')
     @patch('openhands.app_server.config.get_httpx_client')
-    @patch(
-        'openhands.app_server.event_callback.github_v1_callback_processor.get_prompt_template'
-    )
+    @patch('integrations.github.github_v1_callback_processor.get_prompt_template')
     async def test_agent_server_http_error(
         self,
         mock_get_prompt_template,
@@ -542,19 +544,18 @@ class TestGithubV1CallbackProcessor:
         assert result.status == EventCallbackResultStatus.ERROR
         assert 'Failed to send message to agent server' in result.detail
 
-    @patch.dict(
-        os.environ,
-        {
-            'GITHUB_APP_CLIENT_ID': 'test_client_id',
-            'GITHUB_APP_PRIVATE_KEY': 'test_private_key',
-        },
+    @patch(
+        'integrations.github.github_v1_callback_processor.GITHUB_APP_CLIENT_ID',
+        'test_client_id',
+    )
+    @patch(
+        'integrations.github.github_v1_callback_processor.GITHUB_APP_PRIVATE_KEY',
+        'test_private_key',
     )
     @patch('openhands.app_server.config.get_app_conversation_info_service')
     @patch('openhands.app_server.config.get_sandbox_service')
     @patch('openhands.app_server.config.get_httpx_client')
-    @patch(
-        'openhands.app_server.event_callback.github_v1_callback_processor.get_prompt_template'
-    )
+    @patch('integrations.github.github_v1_callback_processor.get_prompt_template')
     async def test_agent_server_timeout(
         self,
         mock_get_prompt_template,
@@ -611,16 +612,15 @@ class TestGithubV1CallbackProcessor:
         ):
             github_callback_processor._get_installation_access_token()
 
-    @patch.dict(
-        os.environ,
-        {
-            'GITHUB_APP_CLIENT_ID': 'test_client_id',
-            'GITHUB_APP_PRIVATE_KEY': 'test_private_key\\nwith_newlines',
-        },
+    @patch(
+        'integrations.github.github_v1_callback_processor.GITHUB_APP_CLIENT_ID',
+        'test_client_id',
     )
     @patch(
-        'openhands.app_server.event_callback.github_v1_callback_processor.GithubIntegration'
+        'integrations.github.github_v1_callback_processor.GITHUB_APP_PRIVATE_KEY',
+        'test_private_key\nwith_newlines',
     )
+    @patch('integrations.github.github_v1_callback_processor.GithubIntegration')
     def test_get_installation_access_token_success(
         self, mock_github_integration, github_callback_processor
     ):
@@ -638,7 +638,7 @@ class TestGithubV1CallbackProcessor:
         )
         mock_integration_instance.get_access_token.assert_called_once_with(12345)
 
-    @patch('openhands.app_server.event_callback.github_v1_callback_processor.Github')
+    @patch('integrations.github.github_v1_callback_processor.Github')
     async def test_post_summary_to_github_issue_comment(
         self, mock_github, github_callback_processor
     ):
@@ -661,7 +661,7 @@ class TestGithubV1CallbackProcessor:
         mock_repo.get_issue.assert_called_once_with(number=42)
         mock_issue.create_comment.assert_called_once_with('Test summary')
 
-    @patch('openhands.app_server.event_callback.github_v1_callback_processor.Github')
+    @patch('integrations.github.github_v1_callback_processor.Github')
     async def test_post_summary_to_github_pr_comment(
         self, mock_github, github_callback_processor_inline
     ):
@@ -697,14 +697,16 @@ class TestGithubV1CallbackProcessor:
             with pytest.raises(RuntimeError, match='Missing GitHub credentials'):
                 await github_callback_processor._post_summary_to_github('Test summary')
 
-    @patch.dict(
-        os.environ,
-        {
-            'GITHUB_APP_CLIENT_ID': 'test_client_id',
-            'GITHUB_APP_PRIVATE_KEY': 'test_private_key',
-            'WEB_HOST': 'test.example.com',
-        },
+    @patch(
+        'integrations.github.github_v1_callback_processor.GITHUB_APP_CLIENT_ID',
+        'test_client_id',
     )
+    @patch(
+        'integrations.github.github_v1_callback_processor.GITHUB_APP_PRIVATE_KEY',
+        'test_private_key',
+    )
+    @patch.dict(os.environ, {'WEB_HOST': 'test.example.com'})
+    @patch('integrations.github.github_v1_callback_processor.get_prompt_template')
     @patch('openhands.app_server.config.get_httpx_client')
     @patch('openhands.app_server.config.get_sandbox_service')
     @patch('openhands.app_server.config.get_app_conversation_info_service')
@@ -713,6 +715,7 @@ class TestGithubV1CallbackProcessor:
         mock_get_app_conversation_info_service,
         mock_get_sandbox_service,
         mock_get_httpx_client,
+        mock_get_prompt_template,
         github_callback_processor,
         conversation_state_update_event,
         event_callback,
@@ -720,6 +723,8 @@ class TestGithubV1CallbackProcessor:
         mock_sandbox_info,
     ):
         conversation_id = uuid4()
+
+        mock_get_prompt_template.return_value = 'Please provide a summary'
 
         # happy-ish path, except httpx error
         mock_httpx_client = await _setup_happy_path_services(
@@ -733,10 +738,10 @@ class TestGithubV1CallbackProcessor:
 
         with (
             patch(
-                'openhands.app_server.event_callback.github_v1_callback_processor.GithubIntegration'
+                'integrations.github.github_v1_callback_processor.GithubIntegration'
             ) as mock_github_integration,
             patch(
-                'openhands.app_server.event_callback.github_v1_callback_processor.Github'
+                'integrations.github.github_v1_callback_processor.Github'
             ) as mock_github,
         ):
             mock_integration = MagicMock()
