@@ -474,10 +474,10 @@ class SlackUpdateExistingConversationView(SlackNewConversationView):
 
             # 4. Prepare the message content
             user_msg, _ = self._get_instructions(jinja)
-            
+
             # 5. Create the message request
             send_message_request = SendMessageRequest(
-                role='user', 
+                role='user',
                 content=[TextContent(text=user_msg)]
             )
 
@@ -520,18 +520,8 @@ class SlackUpdateExistingConversationView(SlackNewConversationView):
                 f'{user_info.slack_display_name} is not authorized to send messages to this conversation.'
             )
 
-        # Check if conversation has been deleted
-        # Update logic when soft delete is implemented
-        conversation_store = await ConversationStoreImpl.get_instance(config, user_id)
-
-        try:
-            conversation_metadata = await conversation_store.get_metadata(self.conversation_id)
-        except FileNotFoundError:
-            raise StartingConvoException('Conversation no longer exists.')
-
-
-        if conversation_metadata.conversation_version == 'v1':
-            await self.send_message_to_v1_conversation(jinja)
+        if self.slack_conversation.v1:
+            pass
         else:
             await self.send_message_to_v0_conversation(jinja)
 
