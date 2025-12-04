@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import { createRoutesStub } from "react-router";
 import { describe, expect, it, vi } from "vitest";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -55,7 +55,7 @@ describe("Settings Screen", () => {
     {
       Component: SettingsScreen,
       // @ts-expect-error - custom loader
-      clientLoader,
+      loader: clientLoader,
       path: "/settings",
       children: [
         {
@@ -207,12 +207,17 @@ describe("Settings Screen", () => {
   describe("Personal org vs team org visibility", () => {
     it("should not show Organization and Organization Members settings items when personal org is selected", async () => {
       vi.spyOn(organizationService, "getOrganizations").mockResolvedValue([
-        { id: "1", name: "Personal Workspace", balance: 100 },
+        {
+          id: "1",
+          name: "Personal Workspace",
+          balance: 100,
+          is_personal: true,
+        },
       ]);
       vi.spyOn(organizationService, "getMe").mockResolvedValue({
         id: "99",
         email: "me@test.com",
-        role: "user",
+        role: "admin",
         status: "active",
       });
 
@@ -230,6 +235,10 @@ describe("Settings Screen", () => {
     });
 
     it("should not show Billing settings item when team org is selected", async () => {
+      // Set up SaaS mode (which has Billing in nav items)
+      mockQueryClient.clear();
+      mockQueryClient.setQueryData(["config"], { APP_MODE: "saas" });
+
       vi.spyOn(organizationService, "getOrganizations").mockResolvedValue([
         { id: "2", name: "Acme Corp", balance: 1000 },
       ]);
@@ -244,15 +253,36 @@ describe("Settings Screen", () => {
 
       const navbar = await screen.findByTestId("settings-navbar");
 
-      // Billing should NOT be visible for team orgs
-      expect(
-        within(navbar).queryByText("Billing", { exact: false }),
-      ).not.toBeInTheDocument();
+      // Wait for orgs to load, then verify Billing is hidden for team orgs
+      await waitFor(() => {
+        expect(
+          within(navbar).queryByText("Billing", { exact: false }),
+        ).not.toBeInTheDocument();
+      });
     });
 
     it("should not allow direct URL access to /settings/org when personal org is selected", async () => {
+      // Set up orgs in query client so clientLoader can access them
+      mockQueryClient.setQueryData(
+        ["organizations"],
+        [
+          {
+            id: "1",
+            name: "Personal Workspace",
+            balance: 100,
+            is_personal: true,
+          },
+        ],
+      );
+      mockQueryClient.setQueryData(["selected_organization"], "1");
+
       vi.spyOn(organizationService, "getOrganizations").mockResolvedValue([
-        { id: "1", name: "Personal Workspace", balance: 100 },
+        {
+          id: "1",
+          name: "Personal Workspace",
+          balance: 100,
+          is_personal: true,
+        },
       ]);
       vi.spyOn(organizationService, "getMe").mockResolvedValue({
         id: "99",
@@ -264,14 +294,35 @@ describe("Settings Screen", () => {
       renderSettingsScreen("/settings/org");
 
       // Should redirect away from org settings for personal org
-      expect(
-        screen.queryByTestId("organization-settings-screen"),
-      ).not.toBeInTheDocument();
+      await waitFor(() => {
+        expect(
+          screen.queryByTestId("organization-settings-screen"),
+        ).not.toBeInTheDocument();
+      });
     });
 
     it("should not allow direct URL access to /settings/organization-members when personal org is selected", async () => {
+      // Set up orgs in query client so clientLoader can access them
+      mockQueryClient.setQueryData(
+        ["organizations"],
+        [
+          {
+            id: "1",
+            name: "Personal Workspace",
+            balance: 100,
+            is_personal: true,
+          },
+        ],
+      );
+      mockQueryClient.setQueryData(["selected_organization"], "1");
+
       vi.spyOn(organizationService, "getOrganizations").mockResolvedValue([
-        { id: "1", name: "Personal Workspace", balance: 100 },
+        {
+          id: "1",
+          name: "Personal Workspace",
+          balance: 100,
+          is_personal: true,
+        },
       ]);
       vi.spyOn(organizationService, "getMe").mockResolvedValue({
         id: "99",
@@ -283,12 +334,21 @@ describe("Settings Screen", () => {
       renderSettingsScreen("/settings/organization-members");
 
       // Should redirect away from organization-members settings for personal org
-      expect(
-        screen.queryByTestId("organization-members-settings-screen"),
-      ).not.toBeInTheDocument();
+      await waitFor(() => {
+        expect(
+          screen.queryByTestId("organization-members-settings-screen"),
+        ).not.toBeInTheDocument();
+      });
     });
 
     it("should not allow direct URL access to /settings/billing when team org is selected", async () => {
+      // Set up orgs in query client so clientLoader can access them
+      mockQueryClient.setQueryData(
+        ["organizations"],
+        [{ id: "2", name: "Acme Corp", balance: 1000 }],
+      );
+      mockQueryClient.setQueryData(["selected_organization"], "2");
+
       vi.spyOn(organizationService, "getOrganizations").mockResolvedValue([
         { id: "2", name: "Acme Corp", balance: 1000 },
       ]);
@@ -302,9 +362,11 @@ describe("Settings Screen", () => {
       renderSettingsScreen("/settings/billing");
 
       // Should redirect away from billing settings for team org
-      expect(
-        screen.queryByTestId("billing-settings-screen"),
-      ).not.toBeInTheDocument();
+      await waitFor(() => {
+        expect(
+          screen.queryByTestId("billing-settings-screen"),
+        ).not.toBeInTheDocument();
+      });
     });
   });
 });

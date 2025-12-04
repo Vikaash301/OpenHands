@@ -4,8 +4,10 @@ import { useTranslation } from "react-i18next";
 import { useConfig } from "#/hooks/query/use-config";
 import { Route } from "./+types/settings";
 import OptionService from "#/api/option-service/option-service.api";
+import { organizationService } from "#/api/organization-service/organization-service.api";
 import { queryClient } from "#/query-client-config";
 import { GetConfigResponse } from "#/api/option-service/option.types";
+import { Organization } from "#/types/org";
 import { SAAS_NAV_ITEMS, OSS_NAV_ITEMS } from "#/constants/settings-nav";
 import { SettingsLayout } from "#/components/features/settings";
 import { Typography } from "#/ui/typography";
@@ -34,6 +36,39 @@ export const clientLoader = async ({ request }: Route.ClientLoaderArgs) => {
   if (!isSaas && SAAS_ONLY_PATHS.includes(pathname)) {
     // if in OSS mode, do not allow access to saas-only paths
     return redirect("/settings");
+  }
+
+  // Get org data for org-based route protection
+  const orgId = queryClient.getQueryData<string | null>([
+    "selected_organization",
+  ]);
+  let organizations = queryClient.getQueryData<Organization[]>([
+    "organizations",
+  ]);
+  if (!organizations) {
+    organizations = await organizationService.getOrganizations();
+    queryClient.setQueryData<Organization[]>(["organizations"], organizations);
+  }
+
+  const selectedOrg = organizations?.find((org) => org.id === orgId);
+  const isPersonalOrg = selectedOrg?.is_personal === true;
+  const isTeamOrg = selectedOrg && !selectedOrg.is_personal;
+
+  // Personal org: redirect away from org management routes
+  if (isPersonalOrg) {
+    if (
+      pathname === "/settings/org" ||
+      pathname === "/settings/organization-members"
+    ) {
+      return redirect("/settings");
+    }
+  }
+
+  // Team org: redirect away from billing route
+  if (isTeamOrg) {
+    if (pathname === "/settings/billing") {
+      return redirect("/settings");
+    }
   }
 
   return null;

@@ -62,15 +62,21 @@ export function UserContextMenu({ type, onClose }: UserContextMenuProps) {
   const ref = useClickOutsideElement<HTMLDivElement>(onClose);
 
   const selectedOrg = organizations?.find((org) => org.id === orgId);
-  const isPersonalOrg = selectedOrg?.is_personal ?? false;
+  const isPersonalOrg = selectedOrg?.is_personal === true;
+  // Team org = any org that is not explicitly marked as personal (includes undefined)
+  const isTeamOrg = selectedOrg && !selectedOrg.is_personal;
 
   const isOss = config?.APP_MODE === "oss";
-  // Filter out organization members/org nav items since they're already handled separately in the menu
-  const navItems = (isOss ? OSS_NAV_ITEMS : SAAS_NAV_ITEMS).filter(
-    (item) =>
-      item.to !== "/settings/organization-members" &&
-      item.to !== "/settings/org",
-  );
+  // Filter nav items based on route visibility rules
+  const navItems = (isOss ? OSS_NAV_ITEMS : SAAS_NAV_ITEMS).filter((item) => {
+    const routeVisibility: Record<string, boolean> = {
+      // Org routes are handled separately in this menu (not shown in nav items)
+      "/settings/organization-members": false,
+      "/settings/org": false,
+      "/settings/billing": !isTeamOrg,
+    };
+    return routeVisibility[item.to] ?? true;
+  });
 
   const [inviteMemberModalIsOpen, setInviteMemberModalIsOpen] =
     React.useState(false);

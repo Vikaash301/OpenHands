@@ -225,6 +225,11 @@ describe("UserContextMenu", () => {
   });
 
   it("should call the onClose handler after each action", async () => {
+    // Mock a team org so org management buttons are visible
+    vi.spyOn(organizationService, "getOrganizations").mockResolvedValue([
+      { id: "2", name: "Acme Corp", balance: 1000 },
+    ]);
+
     const onCloseMock = vi.fn();
     renderUserContextMenu({ type: "superadmin", onClose: onCloseMock });
 
@@ -232,7 +237,8 @@ describe("UserContextMenu", () => {
     await userEvent.click(logoutButton);
     expect(onCloseMock).toHaveBeenCalledTimes(1);
 
-    const manageOrganizationMembersButton = screen.getByText(
+    // Wait for orgs to load so org management buttons are visible
+    const manageOrganizationMembersButton = await screen.findByText(
       "ORG$MANAGE_ORGANIZATION_MEMBERS",
     );
     await userEvent.click(manageOrganizationMembersButton);
@@ -279,10 +285,12 @@ describe("UserContextMenu", () => {
 
       renderUserContextMenu({ type: "admin", onClose: vi.fn });
 
-      // Billing should NOT be visible for team orgs
-      expect(
-        screen.queryByText("SETTINGS$NAV_BILLING"),
-      ).not.toBeInTheDocument();
+      // Wait for orgs to load, then verify Billing is hidden for team orgs
+      await waitFor(() => {
+        expect(
+          screen.queryByText("SETTINGS$NAV_BILLING"),
+        ).not.toBeInTheDocument();
+      });
     });
   });
 

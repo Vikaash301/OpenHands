@@ -7,6 +7,7 @@ import SettingsIcon from "#/icons/settings-gear.svg?react";
 import CloseIcon from "#/icons/close.svg?react";
 import { useSelectedOrganizationId } from "#/context/use-selected-organization";
 import { useMe } from "#/hooks/query/use-me";
+import { useOrganizations } from "#/hooks/query/use-organizations";
 import { OrgSelector } from "../org/org-selector";
 
 interface NavigationItem {
@@ -28,9 +29,14 @@ export function SettingsNavigation({
 }: SettingsNavigationProps) {
   const { orgId } = useSelectedOrganizationId();
   const { data: me } = useMe();
+  const { data: organizations } = useOrganizations();
 
   const { t } = useTranslation();
 
+  const selectedOrg = organizations?.find((org) => org.id === orgId);
+  const isPersonalOrg = selectedOrg?.is_personal === true;
+  // Team org = any org that is not explicitly marked as personal (includes undefined)
+  const isTeamOrg = selectedOrg && !selectedOrg.is_personal;
   const isUser = me?.role === "user";
 
   return (
@@ -78,16 +84,13 @@ export function SettingsNavigation({
         <div className="flex flex-col gap-2">
           {navigationItems
             .filter((navItem) => {
-              // if user is not an admin or no org is selected, do not show organization members/org settings
-              if (
-                (navItem.to === "/settings/organization-members" ||
-                  navItem.to === "/settings/org") &&
-                (isUser || !orgId)
-              ) {
-                return false;
-              }
-
-              return true;
+              const canViewOrgRoutes = !isUser && !!orgId && !isPersonalOrg;
+              const routeVisibility: Record<string, boolean> = {
+                "/settings/organization-members": canViewOrgRoutes,
+                "/settings/org": canViewOrgRoutes,
+                "/settings/billing": !isTeamOrg,
+              };
+              return routeVisibility[navItem.to] ?? true;
             })
             .map(({ to, icon, text }) => (
               <NavLink

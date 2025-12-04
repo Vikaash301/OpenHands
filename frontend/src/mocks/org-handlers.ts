@@ -16,6 +16,7 @@ export const INITIAL_MOCK_ORGS: Organization[] = [
     id: "1",
     name: "Personal Workspace",
     balance: 100,
+    is_personal: true,
   },
   {
     id: "2",
