@@ -390,8 +390,7 @@ async def accept_tos(request: Request):
         user.accepted_tos = accepted_tos
         session.commit()
 
-    logger.info(f'User {user_id} accepted TOS')
-        signup_timestamp=accepted_tos.isoformat(),
+        logger.info(f'User {user_id} accepted TOS')
 
     response = JSONResponse(
         status_code=status.HTTP_200_OK, content={'redirect_url': redirect_url}

@@ -25,6 +25,7 @@ from storage.database import session_maker
 from storage.org_store import OrgStore
 from storage.proactive_conversation_store import ProactiveConversationStore
 from storage.saas_secrets_store import SaasSecretsStore
+from storage.saas_settings_store import SaasSettingsStore
 
 from openhands.agent_server.models import SendMessageRequest
 from openhands.app_server.app_conversation.app_conversation_models import (

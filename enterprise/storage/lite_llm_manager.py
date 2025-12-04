@@ -118,7 +118,7 @@ class LiteLlmManager:
                 )
 
                 await LiteLlmManager._update_user(
-                    client, keycloak_user_id, max_budget=1000000.0
+                    client, keycloak_user_id, max_budget=1000000000.0
                 )
 
                 await LiteLlmManager._add_user_to_team(
