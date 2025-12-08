@@ -25,6 +25,12 @@ from server.routes.api_keys import api_router as api_keys_router  # noqa: E402
 from server.routes.auth import api_router, oauth_router  # noqa: E402
 from server.routes.billing import billing_router  # noqa: E402
 from server.routes.debugging import add_debugging_routes  # noqa: E402
+from server.routes.device_auth import (  # noqa: E402
+    device_page_router,
+)
+from server.routes.device_auth import (  # noqa: E402
+    router as device_auth_router,
+)
 from server.routes.email import api_router as email_router  # noqa: E402
 from server.routes.event_webhook import event_webhook_router  # noqa: E402
 from server.routes.feedback import router as feedback_router  # noqa: E402
@@ -60,6 +66,8 @@ base_app.mount('/internal/metrics', metrics_app())
 base_app.include_router(readiness_router)  # Add routes for readiness checks
 base_app.include_router(api_router)  # Add additional route for github auth
 base_app.include_router(oauth_router)  # Add additional route for oauth callback
+base_app.include_router(device_auth_router)  # Add routes for OAuth device flow
+base_app.include_router(device_page_router)  # Add /device verification page
 base_app.include_router(saas_user_router)  # Add additional route SAAS user calls
 base_app.include_router(
     billing_router
