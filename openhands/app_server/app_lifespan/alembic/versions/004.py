@@ -20,25 +20,27 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
-    # Drop columns that are not in the StoredConversationMetadata dataclass
-    op.drop_column('conversation_metadata', 'github_user_id')
-    op.alter_column(
-        'conversation_metadata',
-        'user_id',
-        existing_type=sa.String(),
-        nullable=True,
-    )
+    with op.batch_alter_table('conversation_metadata') as batch_op:
+        # Drop columns not in StoredConversationMetadata dataclass
+        batch_op.drop_column('github_user_id')
+
+        # Alter user_id to become nullable
+        batch_op.alter_column(
+            'user_id',
+            existing_type=sa.String(),
+            nullable=True,
+        )
 
 
 def downgrade() -> None:
     """Downgrade schema."""
-    # Add back the dropped columns
-    op.add_column(
-        'conversation_metadata', sa.Column('github_user_id', sa.String(), nullable=True)
-    )
-    op.alter_column(
-        'conversation_metadata',
-        'user_id',
-        existing_type=sa.String(),
-        nullable=False,
-    )
+    with op.batch_alter_table('conversation_metadata') as batch_op:
+        # Add back removed column
+        batch_op.add_column(sa.Column('github_user_id', sa.String(), nullable=True))
+
+        # Restore NOT NULL constraint
+        batch_op.alter_column(
+            'user_id',
+            existing_type=sa.String(),
+            nullable=False,
+        )
