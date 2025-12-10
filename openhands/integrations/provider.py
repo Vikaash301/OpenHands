@@ -18,6 +18,12 @@ from openhands.core.logger import openhands_logger as logger
 from openhands.events.action.action import Action
 from openhands.events.action.commands import CmdRunAction
 from openhands.events.stream import EventStream
+from openhands.integrations.azure_devops.azure_devops_service import (
+    AzureDevOpsServiceImpl,
+)
+from openhands.integrations.bitbucket.bitbucket_service import BitBucketServiceImpl
+from openhands.integrations.github.github_service import GithubServiceImpl
+from openhands.integrations.gitlab.gitlab_service import GitLabServiceImpl
 from openhands.integrations.service_types import (
     AuthenticationError,
     Branch,
@@ -111,15 +117,6 @@ class ProviderHandler:
         session_api_key: str | None = None,
         sid: str | None = None,
     ):
-        from openhands.integrations.azure_devops.azure_devops_service import (
-            AzureDevOpsServiceImpl,
-        )
-        from openhands.integrations.bitbucket.bitbucket_service import (
-            BitBucketServiceImpl,
-        )
-        from openhands.integrations.github.github_service import GithubServiceImpl
-        from openhands.integrations.gitlab.gitlab_service import GitLabServiceImpl
-
         if not isinstance(provider_tokens, MappingProxyType):
             raise TypeError(
                 f'provider_tokens must be a MappingProxyType, got {type(provider_tokens).__name__}'
