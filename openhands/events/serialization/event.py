@@ -10,7 +10,6 @@ from openhands.events.serialization.action import action_from_dict
 from openhands.events.serialization.observation import observation_from_dict
 from openhands.events.serialization.utils import remove_fields
 from openhands.events.tool import ToolCallMetadata
-from openhands.llm.metrics import Cost, Metrics, ResponseLatency, TokenUsage
 
 # TODO: move `content` into `extras`
 TOP_KEYS = [
@@ -67,6 +66,14 @@ def event_from_dict(data: dict[str, Any]) -> 'Event':
             if key == 'tool_call_metadata':
                 value = ToolCallMetadata(**value)
             if key == 'llm_metrics':
+                # Lazy import to avoid circular dependency
+                from openhands.llm.metrics import (
+                    Cost,
+                    Metrics,
+                    ResponseLatency,
+                    TokenUsage,
+                )
+
                 metrics = Metrics()
                 if isinstance(value, dict):
                     metrics.accumulated_cost = value.get('accumulated_cost', 0.0)
