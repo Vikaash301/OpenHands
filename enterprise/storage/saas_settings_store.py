@@ -21,12 +21,12 @@ from storage.user_store import UserStore
 
 from openhands.core.config.openhands_config import OpenHandsConfig
 from openhands.server.settings import Settings
-from openhands.storage.settings.settings_store import SettingsStore as OssSettingsStore
+from openhands.storage.settings.settings_store import SettingsStore
 from openhands.utils.async_utils import call_sync_from_async
 
 
 @dataclass
-class SaasSettingsStore(OssSettingsStore):
+class SaasSettingsStore(SettingsStore):
     user_id: str
     session_maker: sessionmaker
     config: OpenHandsConfig
@@ -118,7 +118,6 @@ class SaasSettingsStore(OssSettingsStore):
         return settings
 
     async def store(self, item: Settings):
-        # Call the static store method from SettingsStore
         with self.session_maker() as session:
             if not item:
                 return None
