@@ -1,10 +1,9 @@
 """Unit tests for the telemetry lifespan integration."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from fastapi import FastAPI
-
 from server.telemetry.lifecycle import telemetry_lifespan
 
 
@@ -59,7 +58,9 @@ class TestTelemetryLifespan:
             'server.telemetry.lifecycle.telemetry_service'
         ) as mock_telemetry_service:
             mock_telemetry_service.start = AsyncMock()
-            mock_telemetry_service.stop = AsyncMock(side_effect=Exception('Stop failed'))
+            mock_telemetry_service.stop = AsyncMock(
+                side_effect=Exception('Stop failed')
+            )
 
             # Should not raise exception
             async with telemetry_lifespan(mock_app):

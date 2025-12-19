@@ -4,7 +4,6 @@ from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
 from fastapi import FastAPI
-
 from server.logger import logger
 from server.telemetry.service import telemetry_service
 
