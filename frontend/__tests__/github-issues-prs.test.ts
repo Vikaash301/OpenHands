@@ -172,4 +172,3 @@ describe("useRefreshGitHubIssuesPRs", () => {
     expect(localStorage.getItem("github-issues-prs-cache")).toBeNull();
   });
 });
-
