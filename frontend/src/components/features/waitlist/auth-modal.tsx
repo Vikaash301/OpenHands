@@ -86,7 +86,6 @@ export function AuthModal({
 
       // Verify the token with the backend using the mutation hook
       const verificationResult = await verifyRecaptcha(token);
-      console.log("verificationResult", verificationResult);
       if (!verificationResult.success) {
         setRecaptchaError(true);
         return false;
