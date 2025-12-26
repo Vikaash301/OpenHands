@@ -3,6 +3,7 @@ from typing import Any
 import httpx
 from pydantic import SecretStr
 
+from openhands.core.logger import openhands_logger as logger
 from openhands.integrations.protocols.http_client import HTTPClient
 from openhands.integrations.service_types import (
     BaseGitService,
@@ -56,6 +57,11 @@ class GitLabMixinBase(BaseGitService, HTTPClient):
 
                 # Handle token refresh if needed
                 if self.refresh and self._has_token_expired(response.status_code):
+                    logger.info(
+                        f'Token expired (status {response.status_code}), attempting refresh'
+                    )
+                    # Clear cached token to force refresh
+                    self.token = SecretStr('')  # type: ignore[assignment]
                     await self.get_latest_token()
                     gitlab_headers = await self._get_headers()
                     response = await self.execute_request(

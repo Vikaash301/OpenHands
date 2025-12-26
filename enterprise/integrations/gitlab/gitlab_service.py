@@ -43,6 +43,8 @@ class SaaSGitLabService(GitLabService):
         self.external_auth_token = external_auth_token
         self.external_auth_id = external_auth_id
         self.token_manager = TokenManager(external=external_token_manager)
+        # Enable automatic token refresh on 401 errors
+        self.refresh = True
 
     async def get_latest_token(self) -> SecretStr | None:
         gitlab_token = None
