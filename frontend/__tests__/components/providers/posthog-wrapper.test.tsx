@@ -17,15 +17,14 @@ describe("PostHogWrapper", () => {
     vi.clearAllMocks();
     // Reset URL hash
     window.location.hash = "";
-  });
-
-  it("should initialize PostHog with bootstrap IDs from URL hash", async () => {
     // Mock the config fetch
     // @ts-expect-error - partial mock
     vi.spyOn(OptionService, "getConfig").mockResolvedValue({
       POSTHOG_CLIENT_KEY: "test-posthog-key",
     });
+  });
 
+  it("should initialize PostHog with bootstrap IDs from URL hash", async () => {
     // Set up URL hash with cross-domain tracking params
     window.location.hash = "ph_distinct_id=user-123&ph_session_id=session-456";
 
@@ -52,12 +51,6 @@ describe("PostHogWrapper", () => {
   });
 
   it("should clean up URL hash after extracting bootstrap IDs", async () => {
-    // Mock the config fetch
-    // @ts-expect-error - partial mock
-    vi.spyOn(OptionService, "getConfig").mockResolvedValue({
-      POSTHOG_CLIENT_KEY: "test-posthog-key",
-    });
-
     // Set up URL hash with cross-domain tracking params
     window.location.hash = "ph_distinct_id=user-123&ph_session_id=session-456";
 
