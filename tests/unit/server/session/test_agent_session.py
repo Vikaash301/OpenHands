@@ -8,7 +8,9 @@ from openhands.controller.state.state import State
 from openhands.core.config import LLMConfig, OpenHandsConfig
 from openhands.core.config.agent_config import AgentConfig
 from openhands.events import EventStream, EventStreamSubscriber
+from openhands.integrations.provider import CustomSecret, ProviderToken
 from openhands.integrations.service_types import ProviderType
+from pydantic import SecretStr
 from openhands.llm.llm_registry import LLMRegistry
 from openhands.llm.metrics import Metrics
 from openhands.memory.memory import Memory
@@ -460,9 +462,9 @@ def test_override_provider_tokens_with_custom_secret(
 ):
     """Test that override_provider_tokens_with_custom_secret works correctly.
 
-    This test verifies that the method properly removes provider tokens when
-    corresponding custom secrets exist, without causing the 'dictionary changed
-    size during iteration' error that occurred before the fix.
+    This test verifies that the method properly overrides provider tokens with
+    custom secrets when corresponding custom secrets exist, without causing the
+    'dictionary changed size during iteration' error that occurred before the fix.
     """
     # Setup
     file_store = InMemoryFileStore({})
@@ -475,16 +477,16 @@ def test_override_provider_tokens_with_custom_secret(
 
     # Create test data
     git_provider_tokens = {
-        ProviderType.GITHUB: 'github_token_123',
-        ProviderType.GITLAB: 'gitlab_token_456',
-        ProviderType.BITBUCKET: 'bitbucket_token_789',
+        ProviderType.GITHUB: ProviderToken(token=SecretStr('github_token_123')),
+        ProviderType.GITLAB: ProviderToken(token=SecretStr('gitlab_token_456')),
+        ProviderType.BITBUCKET: ProviderToken(token=SecretStr('bitbucket_token_789')),
     }
 
-    # Custom secrets that will cause some providers to be removed
+    # Custom secrets that will override some provider tokens
     # Tests both lowercase and uppercase variants to ensure comprehensive coverage
     custom_secrets = {
-        'github_token': 'custom_github_token',
-        'GITLAB_TOKEN': 'custom_gitlab_token',
+        'github_token': CustomSecret(secret=SecretStr('custom_github_token')),
+        'GITLAB_TOKEN': CustomSecret(secret=SecretStr('custom_gitlab_token')),
     }
 
     # This should work without raising RuntimeError: dictionary changed size during iteration
@@ -492,10 +494,12 @@ def test_override_provider_tokens_with_custom_secret(
         git_provider_tokens, custom_secrets
     )
 
-    # Verify that GitHub and GitLab tokens were removed (they have custom secrets)
-    assert ProviderType.GITHUB not in result
-    assert ProviderType.GITLAB not in result
+    # Verify that GitHub and GitLab tokens were overridden with custom secrets
+    assert ProviderType.GITHUB in result
+    assert result[ProviderType.GITHUB].token.get_secret_value() == 'custom_github_token'
+    assert ProviderType.GITLAB in result
+    assert result[ProviderType.GITLAB].token.get_secret_value() == 'custom_gitlab_token'
 
-    # Verify that Bitbucket token remains (no custom secret for it)
+    # Verify that Bitbucket token remains unchanged (no custom secret for it)
     assert ProviderType.BITBUCKET in result
-    assert result[ProviderType.BITBUCKET] == 'bitbucket_token_789'
+    assert result[ProviderType.BITBUCKET].token.get_secret_value() == 'bitbucket_token_789'
