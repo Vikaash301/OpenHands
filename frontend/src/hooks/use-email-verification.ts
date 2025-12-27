@@ -12,6 +12,7 @@ import { useSearchParams } from "react-router";
  *   - emailVerified: boolean state for email verification status
  *   - setEmailVerified: function to control email verification status
  *   - hasDuplicatedEmail: boolean state for duplicate email error status
+ *   - userId: string | null for the user ID from the redirect URL
  */
 export function useEmailVerification() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -19,6 +20,7 @@ export function useEmailVerification() {
     React.useState(false);
   const [emailVerified, setEmailVerified] = React.useState(false);
   const [hasDuplicatedEmail, setHasDuplicatedEmail] = React.useState(false);
+  const [userId, setUserId] = React.useState<string | null>(null);
 
   // Check for email verification query parameters
   React.useEffect(() => {
@@ -27,6 +29,7 @@ export function useEmailVerification() {
     );
     const emailVerifiedParam = searchParams.get("email_verified");
     const duplicatedEmailParam = searchParams.get("duplicated_email");
+    const userIdParam = searchParams.get("user_id");
     let shouldUpdate = false;
 
     if (emailVerificationRequired === "true") {
@@ -47,6 +50,12 @@ export function useEmailVerification() {
       shouldUpdate = true;
     }
 
+    if (userIdParam) {
+      setUserId(userIdParam);
+      searchParams.delete("user_id");
+      shouldUpdate = true;
+    }
+
     // Clean up the URL by removing parameters if any were found
     if (shouldUpdate) {
       setSearchParams(searchParams, { replace: true });
@@ -59,5 +68,6 @@ export function useEmailVerification() {
     emailVerified,
     setEmailVerified,
     hasDuplicatedEmail,
+    userId,
   };
 }
