@@ -89,7 +89,7 @@ const INITIAL_MOCK_MEMBERS: Record<string, OrganizationMember[]> = {
       org_id: "1",
       user_id: "3",
       email: "charlie@acme.org",
-      role: "user",
+      role: "member",
       llm_api_key: "**********",
       max_iterations: 20,
       llm_model: "gpt-4",
@@ -103,7 +103,7 @@ const INITIAL_MOCK_MEMBERS: Record<string, OrganizationMember[]> = {
       org_id: "2",
       user_id: "4",
       email: "tony@gamma.org",
-      role: "user",
+      role: "member",
       llm_api_key: "**********",
       max_iterations: 20,
       llm_model: "gpt-4",
@@ -153,7 +153,7 @@ const INITIAL_MOCK_MEMBERS: Record<string, OrganizationMember[]> = {
       org_id: "3",
       user_id: "8",
       email: "chuck@all-hands.dev",
-      role: "user",
+      role: "member",
       llm_api_key: "**********",
       max_iterations: 20,
       llm_model: "gpt-4",
@@ -165,7 +165,7 @@ const INITIAL_MOCK_MEMBERS: Record<string, OrganizationMember[]> = {
       org_id: "3",
       user_id: "9",
       email: "stephan@all-hands.dev",
-      role: "user",
+      role: "member",
       llm_api_key: "**********",
       max_iterations: 20,
       llm_model: "gpt-4",
@@ -177,7 +177,7 @@ const INITIAL_MOCK_MEMBERS: Record<string, OrganizationMember[]> = {
       org_id: "3",
       user_id: "10",
       email: "tim@all-hands.dev",
-      role: "user",
+      role: "member",
       llm_api_key: "**********",
       max_iterations: 20,
       llm_model: "gpt-4",
@@ -224,19 +224,19 @@ export const ORG_HANDLERS = [
       );
     }
 
-    let role: OrganizationUserRole = "user";
+    let role: OrganizationUserRole = "member";
     switch (orgId) {
       case "1":
         role = "owner";
         break;
       case "2":
-        role = "user";
+        role = "member";
         break;
       case "3":
         role = "admin";
         break;
       default:
-        role = "user";
+        role = "member";
     }
 
     const me: OrganizationMember = {
@@ -430,7 +430,7 @@ export const ORG_HANDLERS = [
         org_id: orgId,
         user_id: String(members.length + index + 1),
         email,
-        role: "user" as const,
+        role: "member" as const,
         llm_api_key: "**********",
         max_iterations: 20,
         llm_model: "gpt-4",
