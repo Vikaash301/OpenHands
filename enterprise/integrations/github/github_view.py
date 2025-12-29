@@ -140,7 +140,7 @@ class GithubIssue(ResolverViewInterface):
     title: str
     description: str
     previous_comments: list[Comment]
-    v1: bool
+    v1_enabled: bool
 
     def _get_branch_name(self) -> str | None:
         return getattr(self, 'branch_name', None)
@@ -191,11 +191,14 @@ class GithubIssue(ResolverViewInterface):
     async def initialize_new_conversation(self) -> ConversationMetadata:
         # FIXME: Handle if initialize_conversation returns None
 
-        v1_enabled = await get_user_v1_enabled_setting(self.user_info.keycloak_user_id)
-        logger.info(
-            f'[GitHub V1]: User flag found for {self.user_info.keycloak_user_id} is {v1_enabled}'
+        self.v1_enabled = await get_user_v1_enabled_setting(
+            self.user_info.keycloak_user_id
         )
-        if v1_enabled:
+        self.v1_enabled = True
+        logger.info(
+            f'[GitHub V1]: User flag found for {self.user_info.keycloak_user_id} is {self.v1_enabled}'
+        )
+        if self.v1_enabled:
             # Create dummy conversationm metadata
             # Don't save to conversation store
             # V1 conversations are stored in a separate table
@@ -223,12 +226,10 @@ class GithubIssue(ResolverViewInterface):
         conversation_metadata: ConversationMetadata,
         saas_user_auth: UserAuth,
     ):
-        v1_enabled = await get_user_v1_enabled_setting(self.user_info.keycloak_user_id)
         logger.info(
-            f'[GitHub V1]: User flag found for {self.user_info.keycloak_user_id} is {v1_enabled}'
+            f'[GitHub V1]: User flag found for {self.user_info.keycloak_user_id} is {self.v1_enabled}'
         )
-        v1_enabled = True
-        if v1_enabled:
+        if self.v1_enabled:
             # Use V1 app conversation service
             await self._create_v1_conversation(
                 jinja_env, saas_user_auth, conversation_metadata
@@ -317,8 +318,6 @@ class GithubIssue(ResolverViewInterface):
                     raise RuntimeError(
                         f'Failed to start V1 conversation: {task.detail}'
                     )
-
-        self.v1 = True
 
     def _create_github_v1_callback_processor(self):
         """Create a V1 callback processor for GitHub integration."""
