@@ -142,6 +142,9 @@ class GithubIssue(ResolverViewInterface):
     previous_comments: list[Comment]
     v1: bool
 
+    def _get_branch_name(self) -> str | None:
+        return getattr(self, 'branch_name', None)
+
     async def _load_resolver_context(self):
         github_service = GithubServiceImpl(
             external_auth_id=self.user_info.keycloak_user_id
@@ -196,15 +199,17 @@ class GithubIssue(ResolverViewInterface):
             # Create dummy conversationm metadata
             # Don't save to conversation store
             # V1 conversations are stored in a separate table
+            self.conversation_id = uuid4().hex
             return ConversationMetadata(
-                conversation_id=uuid4().hex, selected_repository=self.full_repo_name
+                conversation_id=self.conversation_id,
+                selected_repository=self.full_repo_name,
             )
 
         conversation_metadata: ConversationMetadata = await initialize_conversation(  # type: ignore[assignment]
             user_id=self.user_info.keycloak_user_id,
             conversation_id=None,
             selected_repository=self.full_repo_name,
-            selected_branch=None,
+            selected_branch=self._get_branch_name(),
             conversation_trigger=ConversationTrigger.RESOLVER,
             git_provider=ProviderType.GITHUB,
         )
@@ -355,6 +360,7 @@ class GithubIssueComment(GithubIssue):
             issue_title=self.title,
             issue_body=self.description,
             previous_comments=self.previous_comments,
+            branch_name=self._get_branch_name(),
         )
 
         return user_instructions, conversation_instructions
@@ -384,31 +390,6 @@ class GithubPRComment(GithubIssueComment):
         )
 
         return user_instructions, conversation_instructions
-
-    async def initialize_new_conversation(self) -> ConversationMetadata:
-        v1_enabled = await get_user_v1_enabled_setting(self.user_info.keycloak_user_id)
-        logger.info(
-            f'[GitHub V1]: User flag found for {self.user_info.keycloak_user_id} is {v1_enabled}'
-        )
-        if v1_enabled:
-            # Create dummy conversationm metadata
-            # Don't save to conversation store
-            # V1 conversations are stored in a separate table
-            return ConversationMetadata(
-                conversation_id=uuid4().hex, selected_repository=self.full_repo_name
-            )
-
-        conversation_metadata: ConversationMetadata = await initialize_conversation(  # type: ignore[assignment]
-            user_id=self.user_info.keycloak_user_id,
-            conversation_id=None,
-            selected_repository=self.full_repo_name,
-            selected_branch=self.branch_name,
-            conversation_trigger=ConversationTrigger.RESOLVER,
-            git_provider=ProviderType.GITHUB,
-        )
-
-        self.conversation_id = conversation_metadata.conversation_id
-        return conversation_metadata
 
 
 @dataclass
