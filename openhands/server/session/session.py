@@ -426,7 +426,16 @@ class WebSession:
                         )
                     _waiting_times += 1
                     await asyncio.sleep(sleep_duration)
-                self._wait_websocket_initial_complete = False
+
+                # Only disable wait flag if a client actually connected
+                # This ensures subsequent events will wait again if no client connected yet
+                if bool(
+                    self.sio.manager.rooms.get('/', {}).get(
+                        ROOM_KEY.format(sid=self.sid)
+                    )
+                ):
+                    self._wait_websocket_initial_complete = False
+
                 await self.sio.emit('oh_event', data, to=ROOM_KEY.format(sid=self.sid))
 
             await asyncio.sleep(0.001)  # This flushes the data to the client
