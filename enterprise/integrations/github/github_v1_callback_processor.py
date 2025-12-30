@@ -3,8 +3,8 @@ from typing import Any
 from uuid import UUID
 
 import httpx
-from github import Github, GithubIntegration
 from integrations.utils import CONVERSATION_URL, get_summary_instruction
+from github import Auth, Github, GithubIntegration
 from pydantic import Field
 from server.auth.constants import GITHUB_APP_CLIENT_ID, GITHUB_APP_PRIVATE_KEY
 
@@ -118,8 +118,7 @@ class GithubV1CallbackProcessor(EventCallbackProcessor):
             raise ValueError('GitHub App credentials are not configured')
 
         github_integration = GithubIntegration(
-            GITHUB_APP_CLIENT_ID,
-            GITHUB_APP_PRIVATE_KEY,
+            auth=Auth.AppAuth(GITHUB_APP_CLIENT_ID, GITHUB_APP_PRIVATE_KEY),
         )
         token_data = github_integration.get_access_token(installation_id)
         return token_data.token
