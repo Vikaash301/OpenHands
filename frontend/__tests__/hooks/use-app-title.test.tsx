@@ -17,8 +17,8 @@ describe("useAppTitle", () => {
     ["oss", "OpenHands"],
     [undefined, "OpenHands"],
   ])(
-    "should return '%s' when APP_MODE is '%s'",
-    (appMode, expectedTitle) => {
+    "should return '$1' when APP_MODE is '$0'",
+    (appMode: string | undefined, expectedTitle: string) => {
       mockUseConfig.mockReturnValue({
         data: { APP_MODE: appMode },
       } as any);

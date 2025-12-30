@@ -16,7 +16,6 @@ import {
   afterEach,
   vi,
 } from "vitest";
-
 import { ws } from "msw";
 import { setupServer } from "msw/node";
 import { useWebSocket } from "#/hooks/use-websocket";
@@ -236,24 +235,17 @@ describe("useWebSocket", () => {
     });
 
     // onMessage handler should have been called for the welcome message
-    await waitFor(() => {
-      expect(onMessageSpy).toHaveBeenCalledOnce();
-    });
+    expect(onMessageSpy).toHaveBeenCalledOnce();
 
-    // Send another message from the mock server after ensuring the first message was processed
+    // Send another message from the mock server
     wsLink.broadcast("Hello from server!");
 
-    await waitFor(
-      () => {
-        expect(result.current.lastMessage).toBe("Hello from server!");
-      },
-      { timeout: 5000 },
-    );
+    await waitFor(() => {
+      expect(result.current.lastMessage).toBe("Hello from server!");
+    });
 
     // onMessage handler should have been called twice now
-    await waitFor(() => {
-      expect(onMessageSpy).toHaveBeenCalledTimes(2);
-    });
+    expect(onMessageSpy).toHaveBeenCalledTimes(2);
   });
 
   it("should call onError handler when WebSocket encounters an error", async () => {
