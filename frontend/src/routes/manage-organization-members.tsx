@@ -14,14 +14,12 @@ import { BrandButton } from "#/components/features/settings/brand-button";
 import { rolePermissions } from "#/utils/org/permissions";
 import { organizationService } from "#/api/organization-service/organization-service.api";
 import { queryClient } from "#/query-client-config";
-import {
-  getSelectedOrgFromQueryClient,
-  getMeFromQueryClient,
-} from "#/utils/query-client-getters";
+import { getSelectedOrganizationIdFromStore } from "#/stores/selected-organization-store";
+import { getMeFromQueryClient } from "#/utils/query-client-getters";
 import { I18nKey } from "#/i18n/declaration";
 
 export const clientLoader = async () => {
-  const selectedOrgId = getSelectedOrgFromQueryClient();
+  const selectedOrgId = getSelectedOrganizationIdFromStore();
   let me = getMeFromQueryClient(selectedOrgId);
 
   if (!me && selectedOrgId) {
@@ -29,7 +27,7 @@ export const clientLoader = async () => {
     queryClient.setQueryData(["organizations", selectedOrgId, "me"], me);
   }
 
-  if (!me || me.role === "user") {
+  if (!me || me.role === "member") {
     // if user is USER role, redirect to user settings
     return redirect("/settings/user");
   }
@@ -46,7 +44,7 @@ function ManageOrganizationMembers() {
 
   const [inviteModalOpen, setInviteModalOpen] = React.useState(false);
 
-  const currentUserRole = user?.role || "user";
+  const currentUserRole = user?.role || "member";
   const hasPermissionToInvite = rolePermissions[currentUserRole].includes(
     "invite_user_to_organization",
   );
@@ -66,7 +64,7 @@ function ManageOrganizationMembers() {
     if (!user) return false;
 
     // Users cannot change their own role
-    if (memberId === user.id) return false;
+    if (memberId === user.user_id) return false;
 
     // Owners cannot change another owner's role
     if (user.role === "owner" && memberRole === "owner") return false;
@@ -89,8 +87,8 @@ function ManageOrganizationMembers() {
     if (userPermissions.includes("change_user_role:admin")) {
       availableRoles.push("admin");
     }
-    if (userPermissions.includes("change_user_role:user")) {
-      availableRoles.push("user");
+    if (userPermissions.includes("change_user_role:member")) {
+      availableRoles.push("member");
     }
 
     return availableRoles;
@@ -125,7 +123,7 @@ function ManageOrganizationMembers() {
         <ul>
           {organizationMembers.map((member) => (
             <li
-              key={member.id}
+              key={member.user_id}
               data-testid="member-item"
               className="border-b border-tertiary"
             >
@@ -134,14 +132,14 @@ function ManageOrganizationMembers() {
                 role={member.role}
                 status={member.status}
                 hasPermissionToChangeRole={checkIfUserHasPermissionToChangeRole(
-                  member.id,
+                  member.user_id,
                   member.role,
                 )}
                 availableRolesToChangeTo={availableRolesToChangeTo}
                 onRoleChange={(role) =>
-                  handleRoleSelectionClick(member.id, role)
+                  handleRoleSelectionClick(member.user_id, role)
                 }
-                onRemove={() => handleRemoveMember(member.id)}
+                onRemove={() => handleRemoveMember(member.user_id)}
               />
             </li>
           ))}

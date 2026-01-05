@@ -10,6 +10,7 @@ import SettingsScreen, { clientLoader } from "#/routes/settings";
 import { resetOrgMockData } from "#/mocks/org-handlers";
 import OptionService from "#/api/option-service/option-service.api";
 import BillingService from "#/api/billing-service/billing-service.api";
+import { OrganizationMember } from "#/types/org";
 
 function ManageOrgWithPortalRoot() {
   return (
@@ -62,27 +63,45 @@ describe("Manage Org Route", () => {
   const getMeSpy = vi.spyOn(organizationService, "getMe");
 
   // Test data constants
-  const TEST_USERS = {
+  const TEST_USERS: Record<"OWNER" | "ADMIN", OrganizationMember> = {
     OWNER: {
-      id: "1",
+      org_id: "1",
+      user_id: "1",
       email: "test@example.com",
-      role: "owner" as const,
-      status: "active" as const,
+      role: "owner",
+      llm_api_key: "**********",
+      max_iterations: 20,
+      llm_model: "gpt-4",
+      llm_api_key_for_byor: null,
+      llm_base_url: "https://api.openai.com",
+      status: "active",
     },
     ADMIN: {
-      id: "1",
+      org_id: "1",
+      user_id: "1",
       email: "test@example.com",
-      role: "admin" as const,
-      status: "active" as const,
+      role: "admin",
+      llm_api_key: "**********",
+      max_iterations: 20,
+      llm_model: "gpt-4",
+      llm_api_key_for_byor: null,
+      llm_base_url: "https://api.openai.com",
+      status: "active",
     },
   };
 
   // Helper function to set up user mock
   const setupUserMock = (userData: {
-    id: string;
+    org_id: string;
+    user_id: string;
     email: string;
-    role: "owner" | "admin" | "user";
-    status: "active" | "invited";
+    role: "owner" | "admin" | "member";
+    llm_api_key: string;
+    max_iterations: number;
+    llm_model: string;
+    llm_api_key_for_byor: string | null;
+    llm_base_url: string;
+    status: "active" | "invited" | "inactive";
   }) => {
     getMeSpy.mockResolvedValue(userData);
   };
@@ -661,16 +680,22 @@ describe("Manage Org Route", () => {
       expect(deleteButton).not.toBeDisabled();
     });
 
-    it.each([
-      { role: "admin" as const, roleName: "Admin" },
-      { role: "user" as const, roleName: "User" },
+    it.each<{ role: "admin" | "member"; roleName: string }>([
+      { role: "admin", roleName: "Admin" },
+      { role: "member", roleName: "Member" },
     ])(
       "should not show delete organization button when user lacks canDeleteOrganization permission ($roleName role)",
       async ({ role }) => {
         setupUserMock({
-          id: "1",
+          org_id: "1",
+          user_id: "1",
           email: "test@example.com",
           role,
+          llm_api_key: "**********",
+          max_iterations: 20,
+          llm_model: "gpt-4",
+          llm_api_key_for_byor: null,
+          llm_base_url: "https://api.openai.com",
           status: "active",
         });
 
@@ -705,6 +730,133 @@ describe("Manage Org Route", () => {
       await userEvent.click(deleteButton);
 
       expect(screen.getByTestId("delete-org-confirmation")).toBeInTheDocument();
+    });
+  });
+
+  describe("HIDE_BILLING feature flag", () => {
+    it("should hide credits section when HIDE_BILLING is true", async () => {
+      // Arrange
+      const getConfigSpy = vi.spyOn(OptionService, "getConfig");
+      getConfigSpy.mockResolvedValue({
+        APP_MODE: "saas",
+        GITHUB_CLIENT_ID: "test",
+        POSTHOG_CLIENT_KEY: "test",
+        FEATURE_FLAGS: {
+          ENABLE_BILLING: false,
+          HIDE_LLM_SETTINGS: false,
+          HIDE_BILLING: true,
+          ENABLE_JIRA: false,
+          ENABLE_JIRA_DC: false,
+          ENABLE_LINEAR: false,
+        },
+      });
+
+      // Act
+      renderManageOrg();
+      await screen.findByTestId("manage-org-screen");
+      await selectOrganization({ orgIndex: 0 });
+
+      // Assert
+      await waitFor(() => {
+        expect(
+          screen.queryByTestId("available-credits"),
+        ).not.toBeInTheDocument();
+      });
+
+      getConfigSpy.mockRestore();
+    });
+
+    it("should hide billing information section when HIDE_BILLING is true", async () => {
+      // Arrange
+      const getConfigSpy = vi.spyOn(OptionService, "getConfig");
+      getConfigSpy.mockResolvedValue({
+        APP_MODE: "saas",
+        GITHUB_CLIENT_ID: "test",
+        POSTHOG_CLIENT_KEY: "test",
+        FEATURE_FLAGS: {
+          ENABLE_BILLING: false,
+          HIDE_LLM_SETTINGS: false,
+          HIDE_BILLING: true,
+          ENABLE_JIRA: false,
+          ENABLE_JIRA_DC: false,
+          ENABLE_LINEAR: false,
+        },
+      });
+
+      // Act
+      renderManageOrg();
+      await screen.findByTestId("manage-org-screen");
+      await selectOrganization({ orgIndex: 0 });
+
+      // Assert
+      await waitFor(() => {
+        expect(screen.queryByTestId("billing-info")).not.toBeInTheDocument();
+      });
+
+      getConfigSpy.mockRestore();
+    });
+
+    it("should hide Add Credits button when HIDE_BILLING is true", async () => {
+      // Arrange
+      const getConfigSpy = vi.spyOn(OptionService, "getConfig");
+      getConfigSpy.mockResolvedValue({
+        APP_MODE: "saas",
+        GITHUB_CLIENT_ID: "test",
+        POSTHOG_CLIENT_KEY: "test",
+        FEATURE_FLAGS: {
+          ENABLE_BILLING: false,
+          HIDE_LLM_SETTINGS: false,
+          HIDE_BILLING: true,
+          ENABLE_JIRA: false,
+          ENABLE_JIRA_DC: false,
+          ENABLE_LINEAR: false,
+        },
+      });
+
+      // Act
+      renderManageOrg();
+      await screen.findByTestId("manage-org-screen");
+      await selectOrganization({ orgIndex: 0 });
+
+      // Assert
+      await waitFor(() => {
+        const addButton = screen.queryByText(/add/i);
+        expect(addButton).not.toBeInTheDocument();
+      });
+
+      getConfigSpy.mockRestore();
+    });
+
+    it("should show all billing-related elements when HIDE_BILLING is false", async () => {
+      // Arrange
+      const getConfigSpy = vi.spyOn(OptionService, "getConfig");
+      getConfigSpy.mockResolvedValue({
+        APP_MODE: "saas",
+        GITHUB_CLIENT_ID: "test",
+        POSTHOG_CLIENT_KEY: "test",
+        FEATURE_FLAGS: {
+          ENABLE_BILLING: false,
+          HIDE_LLM_SETTINGS: false,
+          HIDE_BILLING: false,
+          ENABLE_JIRA: false,
+          ENABLE_JIRA_DC: false,
+          ENABLE_LINEAR: false,
+        },
+      });
+
+      // Act
+      renderManageOrg();
+      await screen.findByTestId("manage-org-screen");
+      await selectOrganization({ orgIndex: 0 });
+
+      // Assert
+      await waitFor(() => {
+        expect(screen.getByTestId("available-credits")).toBeInTheDocument();
+        expect(screen.getByTestId("billing-info")).toBeInTheDocument();
+        expect(screen.getByText(/add/i)).toBeInTheDocument();
+      });
+
+      getConfigSpy.mockRestore();
     });
   });
 });

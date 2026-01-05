@@ -73,7 +73,7 @@ function LlmSettingsScreen() {
   const { data: me } = useMe();
 
   // Determine if user is read-only (users can only view, owners and admins can edit)
-  const isReadOnly = me?.role === "user";
+  const isReadOnly = me?.role !== "owner" && me?.role !== "admin";
 
   const [view, setView] = React.useState<"basic" | "advanced">("basic");
 
@@ -96,15 +96,15 @@ function LlmSettingsScreen() {
 
   // Track confirmation mode state to control security analyzer visibility
   const [confirmationModeEnabled, setConfirmationModeEnabled] = React.useState(
-    settings?.CONFIRMATION_MODE ?? DEFAULT_SETTINGS.CONFIRMATION_MODE,
+    settings?.confirmation_mode ?? DEFAULT_SETTINGS.confirmation_mode,
   );
 
   // Track selected security analyzer for form submission
   const [selectedSecurityAnalyzer, setSelectedSecurityAnalyzer] =
     React.useState(
-      settings?.SECURITY_ANALYZER === null
+      settings?.security_analyzer === null
         ? "none"
-        : (settings?.SECURITY_ANALYZER ?? DEFAULT_SETTINGS.SECURITY_ANALYZER),
+        : (settings?.security_analyzer ?? DEFAULT_SETTINGS.security_analyzer),
     );
 
   const [selectedProvider, setSelectedProvider] = React.useState<string | null>(
@@ -116,7 +116,7 @@ function LlmSettingsScreen() {
   );
 
   // Determine if we should hide the API key input and use OpenHands-managed key (when using OpenHands provider in SaaS mode)
-  const currentModel = currentSelectedModel || settings?.LLM_MODEL;
+  const currentModel = currentSelectedModel || settings?.llm_model;
 
   const isSaasMode = config?.APP_MODE === "saas";
 
@@ -129,7 +129,7 @@ function LlmSettingsScreen() {
       if (dirtyInputs.model) {
         return currentModel?.startsWith("openhands/");
       }
-      return settings?.LLM_MODEL?.startsWith("openhands/");
+      return settings?.llm_model?.startsWith("openhands/");
     }
 
     return false;
@@ -138,13 +138,13 @@ function LlmSettingsScreen() {
   const shouldUseOpenHandsKey = isOpenHandsProvider() && isSaasMode;
 
   // Determine if we should hide the agent dropdown when V1 conversation API is enabled
-  const isV1Enabled = settings?.V1_ENABLED;
+  const isV1Enabled = settings?.v1_enabled;
 
   React.useEffect(() => {
     const determineWhetherToToggleAdvancedSettings = () => {
       if (resources && settings) {
         return (
-          isCustomModel(resources.models, settings.LLM_MODEL) ||
+          isCustomModel(resources.models, settings.llm_model) ||
           hasAdvancedSettingsSet({
             ...settings,
           })
@@ -162,24 +162,24 @@ function LlmSettingsScreen() {
 
   // Initialize currentSelectedModel with the current settings
   React.useEffect(() => {
-    if (settings?.LLM_MODEL) {
-      setCurrentSelectedModel(settings.LLM_MODEL);
+    if (settings?.llm_model) {
+      setCurrentSelectedModel(settings.llm_model);
     }
-  }, [settings?.LLM_MODEL]);
+  }, [settings?.llm_model]);
 
   // Update confirmation mode state when settings change
   React.useEffect(() => {
-    if (settings?.CONFIRMATION_MODE !== undefined) {
-      setConfirmationModeEnabled(settings.CONFIRMATION_MODE);
+    if (settings?.confirmation_mode !== undefined) {
+      setConfirmationModeEnabled(settings.confirmation_mode);
     }
-  }, [settings?.CONFIRMATION_MODE]);
+  }, [settings?.confirmation_mode]);
 
   // Update selected security analyzer state when settings change
   React.useEffect(() => {
-    if (settings?.SECURITY_ANALYZER !== undefined) {
-      setSelectedSecurityAnalyzer(settings.SECURITY_ANALYZER || "none");
+    if (settings?.security_analyzer !== undefined) {
+      setSelectedSecurityAnalyzer(settings.security_analyzer || "none");
     }
-  }, [settings?.SECURITY_ANALYZER]);
+  }, [settings?.security_analyzer]);
 
   // Handle URL parameters for SaaS subscription redirects
   React.useEffect(() => {
@@ -235,19 +235,19 @@ function LlmSettingsScreen() {
 
     saveSettings(
       {
-        LLM_MODEL: fullLlmModel,
+        llm_model: fullLlmModel,
         llm_api_key: finalApiKey || null,
-        SEARCH_API_KEY: searchApiKey || "",
-        CONFIRMATION_MODE: confirmationMode,
-        SECURITY_ANALYZER:
+        search_api_key: searchApiKey || "",
+        confirmation_mode: confirmationMode,
+        security_analyzer:
           securityAnalyzer === "none"
             ? null
-            : securityAnalyzer || DEFAULT_SETTINGS.SECURITY_ANALYZER,
+            : securityAnalyzer || DEFAULT_SETTINGS.security_analyzer,
 
         // reset advanced settings
-        LLM_BASE_URL: DEFAULT_SETTINGS.LLM_BASE_URL,
-        AGENT: DEFAULT_SETTINGS.AGENT,
-        ENABLE_DEFAULT_CONDENSER: DEFAULT_SETTINGS.ENABLE_DEFAULT_CONDENSER,
+        llm_base_url: DEFAULT_SETTINGS.llm_base_url,
+        agent: DEFAULT_SETTINGS.agent,
+        enable_default_condenser: DEFAULT_SETTINGS.enable_default_condenser,
       },
       {
         onSuccess: handleSuccessfulMutation,
@@ -286,19 +286,19 @@ function LlmSettingsScreen() {
 
     saveSettings(
       {
-        LLM_MODEL: model,
-        LLM_BASE_URL: baseUrl,
+        llm_model: model,
+        llm_base_url: baseUrl,
         llm_api_key: finalApiKey || null,
-        SEARCH_API_KEY: searchApiKey || "",
-        AGENT: agent,
-        CONFIRMATION_MODE: confirmationMode,
-        ENABLE_DEFAULT_CONDENSER: enableDefaultCondenser,
-        CONDENSER_MAX_SIZE:
-          condenserMaxSize ?? DEFAULT_SETTINGS.CONDENSER_MAX_SIZE,
-        SECURITY_ANALYZER:
+        search_api_key: searchApiKey || "",
+        agent,
+        confirmation_mode: confirmationMode,
+        enable_default_condenser: enableDefaultCondenser,
+        condenser_max_size:
+          condenserMaxSize ?? DEFAULT_SETTINGS.condenser_max_size,
+        security_analyzer:
           securityAnalyzer === "none"
             ? null
-            : securityAnalyzer || DEFAULT_SETTINGS.SECURITY_ANALYZER,
+            : securityAnalyzer || DEFAULT_SETTINGS.security_analyzer,
       },
       {
         onSuccess: handleSuccessfulMutation,
@@ -328,7 +328,7 @@ function LlmSettingsScreen() {
   ) => {
     // openai providers are special case; see ModelSelector
     // component for details
-    const modelIsDirty = model !== settings?.LLM_MODEL.replace("openai/", "");
+    const modelIsDirty = model !== settings?.llm_model.replace("openai/", "");
     setDirtyInputs((prev) => ({
       ...prev,
       model: modelIsDirty,
@@ -356,7 +356,7 @@ function LlmSettingsScreen() {
   };
 
   const handleSearchApiKeyIsDirty = (searchApiKey: string) => {
-    const searchApiKeyIsDirty = searchApiKey !== settings?.SEARCH_API_KEY;
+    const searchApiKeyIsDirty = searchApiKey !== settings?.search_api_key;
     setDirtyInputs((prev) => ({
       ...prev,
       searchApiKey: searchApiKeyIsDirty,
@@ -364,7 +364,7 @@ function LlmSettingsScreen() {
   };
 
   const handleCustomModelIsDirty = (model: string) => {
-    const modelIsDirty = model !== settings?.LLM_MODEL && model !== "";
+    const modelIsDirty = model !== settings?.llm_model && model !== "";
     setDirtyInputs((prev) => ({
       ...prev,
       model: modelIsDirty,
@@ -375,7 +375,7 @@ function LlmSettingsScreen() {
   };
 
   const handleBaseUrlIsDirty = (baseUrl: string) => {
-    const baseUrlIsDirty = baseUrl !== settings?.LLM_BASE_URL;
+    const baseUrlIsDirty = baseUrl !== settings?.llm_base_url;
     setDirtyInputs((prev) => ({
       ...prev,
       baseUrl: baseUrlIsDirty,
@@ -383,7 +383,7 @@ function LlmSettingsScreen() {
   };
 
   const handleAgentIsDirty = (agent: string) => {
-    const agentIsDirty = agent !== settings?.AGENT && agent !== "";
+    const agentIsDirty = agent !== settings?.agent && agent !== "";
     setDirtyInputs((prev) => ({
       ...prev,
       agent: agentIsDirty,
@@ -391,7 +391,7 @@ function LlmSettingsScreen() {
   };
 
   const handleConfirmationModeIsDirty = (isToggled: boolean) => {
-    const confirmationModeIsDirty = isToggled !== settings?.CONFIRMATION_MODE;
+    const confirmationModeIsDirty = isToggled !== settings?.confirmation_mode;
     setDirtyInputs((prev) => ({
       ...prev,
       confirmationMode: confirmationModeIsDirty,
@@ -400,7 +400,7 @@ function LlmSettingsScreen() {
 
     // When confirmation mode is enabled, set default security analyzer to "llm" if not already set
     if (isToggled && !selectedSecurityAnalyzer) {
-      setSelectedSecurityAnalyzer(DEFAULT_SETTINGS.SECURITY_ANALYZER);
+      setSelectedSecurityAnalyzer(DEFAULT_SETTINGS.security_analyzer);
       setDirtyInputs((prev) => ({
         ...prev,
         securityAnalyzer: true,
@@ -410,7 +410,7 @@ function LlmSettingsScreen() {
 
   const handleEnableDefaultCondenserIsDirty = (isToggled: boolean) => {
     const enableDefaultCondenserIsDirty =
-      isToggled !== settings?.ENABLE_DEFAULT_CONDENSER;
+      isToggled !== settings?.enable_default_condenser;
     setDirtyInputs((prev) => ({
       ...prev,
       enableDefaultCondenser: enableDefaultCondenserIsDirty,
@@ -421,8 +421,8 @@ function LlmSettingsScreen() {
     const parsed = value ? Number.parseInt(value, 10) : undefined;
     const bounded = parsed !== undefined ? Math.max(20, parsed) : undefined;
     const condenserMaxSizeIsDirty =
-      (bounded ?? DEFAULT_SETTINGS.CONDENSER_MAX_SIZE) !==
-      (settings?.CONDENSER_MAX_SIZE ?? DEFAULT_SETTINGS.CONDENSER_MAX_SIZE);
+      (bounded ?? DEFAULT_SETTINGS.condenser_max_size) !==
+      (settings?.condenser_max_size ?? DEFAULT_SETTINGS.condenser_max_size);
     setDirtyInputs((prev) => ({
       ...prev,
       condenserMaxSize: condenserMaxSizeIsDirty,
@@ -431,7 +431,7 @@ function LlmSettingsScreen() {
 
   const handleSecurityAnalyzerIsDirty = (securityAnalyzer: string) => {
     const securityAnalyzerIsDirty =
-      securityAnalyzer !== settings?.SECURITY_ANALYZER;
+      securityAnalyzer !== settings?.security_analyzer;
     setDirtyInputs((prev) => ({
       ...prev,
       securityAnalyzer: securityAnalyzerIsDirty,
@@ -457,6 +457,10 @@ function LlmSettingsScreen() {
       key: "none",
       label: t(I18nKey.SETTINGS$SECURITY_ANALYZER_NONE),
     });
+
+    if (isV1Enabled) {
+      return orderedItems;
+    }
 
     // Add Invariant analyzer third
     if (analyzers.includes("invariant")) {
@@ -513,13 +517,13 @@ function LlmSettingsScreen() {
                 <>
                   <ModelSelector
                     models={modelsAndProviders}
-                    currentModel={settings.LLM_MODEL || DEFAULT_OPENHANDS_MODEL}
+                    currentModel={settings.llm_model || DEFAULT_OPENHANDS_MODEL}
                     onChange={handleModelIsDirty}
                     onDefaultValuesChanged={onDefaultValuesChanged}
                     wrapperClassName="!flex-col !gap-6"
                     isDisabled={isReadOnly}
                   />
-                  {(settings.LLM_MODEL?.startsWith("openhands/") ||
+                  {(settings.llm_model?.startsWith("openhands/") ||
                     currentSelectedModel?.startsWith("openhands/")) && (
                     <OpenHandsApiKeyHelp testId="openhands-api-key-help" />
                   )}
@@ -534,12 +538,12 @@ function LlmSettingsScreen() {
                     label={t(I18nKey.SETTINGS_FORM$API_KEY)}
                     type="password"
                     className="w-full max-w-[680px]"
-                    placeholder={settings.LLM_API_KEY_SET ? "<hidden>" : ""}
+                    placeholder={settings.llm_api_key_set ? "<hidden>" : ""}
                     onChange={handleApiKeyIsDirty}
                     isDisabled={isReadOnly}
                     startContent={
-                      settings.LLM_API_KEY_SET && (
-                        <KeyStatusIcon isSet={settings.LLM_API_KEY_SET} />
+                      settings.llm_api_key_set && (
+                        <KeyStatusIcon isSet={settings.llm_api_key_set} />
                       )
                     }
                   />
@@ -564,14 +568,14 @@ function LlmSettingsScreen() {
                 testId="llm-custom-model-input"
                 name="llm-custom-model-input"
                 label={t(I18nKey.SETTINGS$CUSTOM_MODEL)}
-                defaultValue={settings.LLM_MODEL || DEFAULT_OPENHANDS_MODEL}
+                defaultValue={settings.llm_model || DEFAULT_OPENHANDS_MODEL}
                 placeholder={DEFAULT_OPENHANDS_MODEL}
                 type="text"
                 className="w-full max-w-[680px]"
                 onChange={handleCustomModelIsDirty}
                 isDisabled={isReadOnly}
               />
-              {(settings.LLM_MODEL?.startsWith("openhands/") ||
+              {(settings.llm_model?.startsWith("openhands/") ||
                 currentSelectedModel?.startsWith("openhands/")) && (
                 <OpenHandsApiKeyHelp testId="openhands-api-key-help-2" />
               )}
@@ -580,7 +584,7 @@ function LlmSettingsScreen() {
                 testId="base-url-input"
                 name="base-url-input"
                 label={t(I18nKey.SETTINGS$BASE_URL)}
-                defaultValue={settings.LLM_BASE_URL}
+                defaultValue={settings.llm_base_url}
                 placeholder="https://api.openai.com"
                 type="text"
                 className="w-full max-w-[680px]"
@@ -596,12 +600,12 @@ function LlmSettingsScreen() {
                     label={t(I18nKey.SETTINGS_FORM$API_KEY)}
                     type="password"
                     className="w-full max-w-[680px]"
-                    placeholder={settings.LLM_API_KEY_SET ? "<hidden>" : ""}
+                    placeholder={settings.llm_api_key_set ? "<hidden>" : ""}
                     onChange={handleApiKeyIsDirty}
                     isDisabled={isReadOnly}
                     startContent={
-                      settings.LLM_API_KEY_SET && (
-                        <KeyStatusIcon isSet={settings.LLM_API_KEY_SET} />
+                      settings.llm_api_key_set && (
+                        <KeyStatusIcon isSet={settings.llm_api_key_set} />
                       )
                     }
                   />
@@ -622,12 +626,12 @@ function LlmSettingsScreen() {
                     label={t(I18nKey.SETTINGS$SEARCH_API_KEY)}
                     type="password"
                     className="w-full max-w-[680px]"
-                    defaultValue={settings.SEARCH_API_KEY || ""}
+                    defaultValue={settings.search_api_key || ""}
                     onChange={handleSearchApiKeyIsDirty}
                     placeholder={t(I18nKey.API$TVLY_KEY_EXAMPLE)}
                     startContent={
-                      settings.SEARCH_API_KEY_SET && (
-                        <KeyStatusIcon isSet={settings.SEARCH_API_KEY_SET} />
+                      settings.search_api_key_set && (
+                        <KeyStatusIcon isSet={settings.search_api_key_set} />
                       )
                     }
                   />
@@ -650,7 +654,7 @@ function LlmSettingsScreen() {
                           label: agent, // TODO: Add i18n support for agent names
                         })) || []
                       }
-                      defaultSelectedKey={settings.AGENT}
+                      defaultSelectedKey={settings.agent}
                       isClearable={false}
                       onInputChange={handleAgentIsDirty}
                       isDisabled={isReadOnly}
@@ -669,11 +673,11 @@ function LlmSettingsScreen() {
                   step={1}
                   label={t(I18nKey.SETTINGS$CONDENSER_MAX_SIZE)}
                   defaultValue={(
-                    settings.CONDENSER_MAX_SIZE ??
-                    DEFAULT_SETTINGS.CONDENSER_MAX_SIZE
+                    settings.condenser_max_size ??
+                    DEFAULT_SETTINGS.condenser_max_size
                   )?.toString()}
                   onChange={(value) => handleCondenserMaxSizeIsDirty(value)}
-                  isDisabled={isReadOnly || !settings.ENABLE_DEFAULT_CONDENSER}
+                  isDisabled={isReadOnly || !settings.enable_default_condenser}
                 />
                 <p className="text-xs text-tertiary-alt mt-1">
                   {t(I18nKey.SETTINGS$CONDENSER_MAX_SIZE_TOOLTIP)}
@@ -683,7 +687,7 @@ function LlmSettingsScreen() {
               <SettingsSwitch
                 testId="enable-memory-condenser-switch"
                 name="enable-memory-condenser-switch"
-                defaultIsToggled={settings.ENABLE_DEFAULT_CONDENSER}
+                defaultIsToggled={settings.enable_default_condenser}
                 onToggle={handleEnableDefaultCondenserIsDirty}
                 isDisabled={isReadOnly}
               >
@@ -696,7 +700,7 @@ function LlmSettingsScreen() {
                   testId="enable-confirmation-mode-switch"
                   name="enable-confirmation-mode-switch"
                   onToggle={handleConfirmationModeIsDirty}
-                  defaultIsToggled={settings.CONFIRMATION_MODE}
+                  defaultIsToggled={settings.confirmation_mode}
                   isBeta
                   isDisabled={isReadOnly}
                 >

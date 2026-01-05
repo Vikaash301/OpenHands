@@ -54,7 +54,7 @@ describe("UserContextMenu", () => {
   });
 
   it("should render the default context items for a user", () => {
-    renderUserContextMenu({ type: "user", onClose: vi.fn });
+    renderUserContextMenu({ type: "member", onClose: vi.fn });
 
     screen.getByTestId("org-selector");
     screen.getByText("ACCOUNT_SETTINGS$LOGOUT");
@@ -68,27 +68,45 @@ describe("UserContextMenu", () => {
     expect(screen.queryByText("ORG$MANAGE_ACCOUNT")).not.toBeInTheDocument();
   });
 
-  it("should render navigation items from SAAS_NAV_ITEMS (except organization-members/org)", () => {
-    renderUserContextMenu({ type: "user", onClose: vi.fn });
+  it("should render navigation items from SAAS_NAV_ITEMS (except organization-members/org)", async () => {
+    vi.spyOn(OptionService, "getConfig").mockResolvedValue({
+      APP_MODE: "saas",
+      GITHUB_CLIENT_ID: "test",
+      POSTHOG_CLIENT_KEY: "test",
+      FEATURE_FLAGS: {
+        ENABLE_BILLING: false,
+        HIDE_LLM_SETTINGS: false,
+        HIDE_BILLING: false,
+        ENABLE_JIRA: false,
+        ENABLE_JIRA_DC: false,
+        ENABLE_LINEAR: false,
+      },
+    });
 
-    // Verify that navigation items are rendered (except organization-members/org which are filtered out)
-    SAAS_NAV_ITEMS.filter(
+    renderUserContextMenu({ type: "member", onClose: vi.fn });
+
+    // Wait for config to load and verify that navigation items are rendered (except organization-members/org which are filtered out)
+    const expectedItems = SAAS_NAV_ITEMS.filter(
       (item) =>
         item.to !== "/settings/org-members" && item.to !== "/settings/org",
-    ).forEach((item) => {
-      expect(screen.getByText(item.text)).toBeInTheDocument();
+    );
+
+    await waitFor(() => {
+      expectedItems.forEach((item) => {
+        expect(screen.getByText(item.text)).toBeInTheDocument();
+      });
     });
   });
 
   it("should not display Organization Members menu item for regular users (filtered out)", () => {
-    renderUserContextMenu({ type: "user", onClose: vi.fn });
+    renderUserContextMenu({ type: "member", onClose: vi.fn });
 
     // Organization Members is filtered out from nav items for all users
     expect(screen.queryByText("Organization Members")).not.toBeInTheDocument();
   });
 
   it("should render a documentation link", () => {
-    renderUserContextMenu({ type: "user", onClose: vi.fn });
+    renderUserContextMenu({ type: "member", onClose: vi.fn });
 
     const docsLink = screen.getByText("SIDEBAR$DOCS").closest("a");
     expect(docsLink).toHaveAttribute("href", "https://docs.openhands.dev");
@@ -104,6 +122,7 @@ describe("UserContextMenu", () => {
         FEATURE_FLAGS: {
           ENABLE_BILLING: false,
           HIDE_LLM_SETTINGS: false,
+          HIDE_BILLING: false,
           ENABLE_JIRA: false,
           ENABLE_JIRA_DC: false,
           ENABLE_LINEAR: false,
@@ -112,7 +131,7 @@ describe("UserContextMenu", () => {
     });
 
     it("should render OSS_NAV_ITEMS when in OSS mode", async () => {
-      renderUserContextMenu({ type: "user", onClose: vi.fn });
+      renderUserContextMenu({ type: "member", onClose: vi.fn });
 
       // Wait for the config to load and OSS nav items to appear
       await waitFor(() => {
@@ -128,7 +147,7 @@ describe("UserContextMenu", () => {
     });
 
     it("should not display Organization Members menu item in OSS mode", async () => {
-      renderUserContextMenu({ type: "user", onClose: vi.fn });
+      renderUserContextMenu({ type: "member", onClose: vi.fn });
 
       // Wait for the config to load
       await waitFor(() => {
@@ -151,13 +170,14 @@ describe("UserContextMenu", () => {
         FEATURE_FLAGS: {
           ENABLE_BILLING: false,
           HIDE_LLM_SETTINGS: true,
+          HIDE_BILLING: false,
           ENABLE_JIRA: false,
           ENABLE_JIRA_DC: false,
           ENABLE_LINEAR: false,
         },
       });
 
-      renderUserContextMenu({ type: "user", onClose: vi.fn });
+      renderUserContextMenu({ type: "member", onClose: vi.fn });
 
       await waitFor(() => {
         // Other nav items should still be visible
@@ -177,13 +197,14 @@ describe("UserContextMenu", () => {
         FEATURE_FLAGS: {
           ENABLE_BILLING: false,
           HIDE_LLM_SETTINGS: false,
+          HIDE_BILLING: false,
           ENABLE_JIRA: false,
           ENABLE_JIRA_DC: false,
           ENABLE_LINEAR: false,
         },
       });
 
-      renderUserContextMenu({ type: "user", onClose: vi.fn });
+      renderUserContextMenu({ type: "member", onClose: vi.fn });
 
       await waitFor(() => {
         expect(
@@ -213,7 +234,7 @@ describe("UserContextMenu", () => {
 
   it("should call the logout handler when Logout is clicked", async () => {
     const logoutSpy = vi.spyOn(AuthService, "logout");
-    renderUserContextMenu({ type: "user", onClose: vi.fn });
+    renderUserContextMenu({ type: "member", onClose: vi.fn });
 
     const logoutButton = screen.getByText("ACCOUNT_SETTINGS$LOGOUT");
     await userEvent.click(logoutButton);
@@ -221,12 +242,28 @@ describe("UserContextMenu", () => {
     expect(logoutSpy).toHaveBeenCalledOnce();
   });
 
-  it("should have correct navigation links for nav items", () => {
-    renderUserContextMenu({ type: "user", onClose: vi.fn });
+  it("should have correct navigation links for nav items", async () => {
+    vi.spyOn(OptionService, "getConfig").mockResolvedValue({
+      APP_MODE: "saas",
+      GITHUB_CLIENT_ID: "test",
+      POSTHOG_CLIENT_KEY: "test",
+      FEATURE_FLAGS: {
+        ENABLE_BILLING: false,
+        HIDE_LLM_SETTINGS: false,
+        HIDE_BILLING: false,
+        ENABLE_JIRA: false,
+        ENABLE_JIRA_DC: false,
+        ENABLE_LINEAR: false,
+      },
+    });
 
-    // Test a few representative nav items have the correct href
-    const userLink = screen.getByText("SETTINGS$NAV_USER").closest("a");
-    expect(userLink).toHaveAttribute("href", "/settings/user");
+    renderUserContextMenu({ type: "member", onClose: vi.fn });
+
+    // Wait for config to load and test a few representative nav items have the correct href
+    await waitFor(() => {
+      const userLink = screen.getByText("SETTINGS$NAV_USER").closest("a");
+      expect(userLink).toHaveAttribute("href", "/settings/user");
+    });
 
     const billingLink = screen.getByText("SETTINGS$NAV_BILLING").closest("a");
     expect(billingLink).toHaveAttribute("href", "/settings/billing");
@@ -261,7 +298,7 @@ describe("UserContextMenu", () => {
 
   it("should call the onClose handler when clicking outside the context menu", async () => {
     const onCloseMock = vi.fn();
-    renderUserContextMenu({ type: "user", onClose: onCloseMock });
+    renderUserContextMenu({ type: "member", onClose: onCloseMock });
 
     const contextMenu = screen.getByTestId("user-context-menu");
     await userEvent.click(contextMenu);
@@ -313,7 +350,7 @@ describe("UserContextMenu", () => {
 
   test("the user can change orgs", async () => {
     const onCloseMock = vi.fn();
-    renderUserContextMenu({ type: "user", onClose: onCloseMock });
+    renderUserContextMenu({ type: "member", onClose: onCloseMock });
 
     const orgSelector = screen.getByTestId("org-selector");
     expect(orgSelector).toBeInTheDocument();
@@ -332,7 +369,7 @@ describe("UserContextMenu", () => {
 
   it("should have Personal Account as the default selected option with null value", async () => {
     const onCloseMock = vi.fn();
-    renderUserContextMenu({ type: "user", onClose: onCloseMock });
+    renderUserContextMenu({ type: "member", onClose: onCloseMock });
 
     const orgSelector = screen.getByTestId("org-selector");
 

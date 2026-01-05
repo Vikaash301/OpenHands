@@ -9,17 +9,12 @@ import { SettingsDropdownInput } from "./settings-dropdown-input";
 import { useSelectedOrganizationId } from "#/context/use-selected-organization";
 import { useOrganizations } from "#/hooks/query/use-organizations";
 import { useMe } from "#/hooks/query/use-me";
-
-interface NavigationItem {
-  to: string;
-  icon: React.ReactNode;
-  text: string;
-}
+import { SettingsNavItem } from "#/constants/settings-nav";
 
 interface SettingsNavigationProps {
   isMobileMenuOpen: boolean;
   onCloseMobileMenu: () => void;
-  navigationItems: NavigationItem[];
+  navigationItems: SettingsNavItem[];
 }
 
 export function SettingsNavigation({
@@ -27,13 +22,13 @@ export function SettingsNavigation({
   onCloseMobileMenu,
   navigationItems,
 }: SettingsNavigationProps) {
-  const { orgId, setOrgId } = useSelectedOrganizationId();
+  const { organizationId, setOrganizationId } = useSelectedOrganizationId();
   const { data: organizations } = useOrganizations();
   const { data: me } = useMe();
 
   const { t } = useTranslation();
 
-  const isUser = me?.role === "user";
+  const isUser = me?.role === "member";
 
   return (
     <>
@@ -44,7 +39,6 @@ export function SettingsNavigation({
           onClick={onCloseMobileMenu}
         />
       )}
-
       {/* Navigation sidebar */}
       <nav
         data-testid="settings-navbar"
@@ -62,7 +56,7 @@ export function SettingsNavigation({
             testId="org-select"
             name="organization"
             placeholder="Please select an organization"
-            selectedKey={orgId || ""}
+            selectedKey={organizationId || ""}
             items={
               organizations?.map((org) => ({
                 key: org.id,
@@ -71,9 +65,9 @@ export function SettingsNavigation({
             }
             onSelectionChange={(org) => {
               if (org) {
-                setOrgId(org.toString());
+                setOrganizationId(org.toString());
               } else {
-                setOrgId(null);
+                setOrganizationId(null);
               }
             }}
           />
@@ -102,7 +96,7 @@ export function SettingsNavigation({
               if (
                 (navItem.to === "/settings/org-members" ||
                   navItem.to === "/settings/org") &&
-                (isUser || !orgId)
+                (isUser || !organizationId)
               ) {
                 return false;
               }

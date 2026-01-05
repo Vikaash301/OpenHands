@@ -1,6 +1,5 @@
 import React from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { redirect, useNavigate } from "react-router";
+import { redirect } from "react-router";
 import { useTranslation } from "react-i18next";
 import { useCreateStripeCheckoutSession } from "#/hooks/mutation/stripe/use-create-stripe-checkout-session";
 import { useOrganization } from "#/hooks/query/use-organization";
@@ -8,78 +7,20 @@ import { useOrganizationPaymentInfo } from "#/hooks/query/use-organization-payme
 import { ModalBackdrop } from "#/components/shared/modals/modal-backdrop";
 import { cn } from "#/utils/utils";
 import { organizationService } from "#/api/organization-service/organization-service.api";
-import { useSelectedOrganizationId } from "#/context/use-selected-organization";
 import { SettingsInput } from "#/components/features/settings/settings-input";
 import { BrandButton } from "#/components/features/settings/brand-button";
 import { useMe } from "#/hooks/query/use-me";
+import { useConfig } from "#/hooks/query/use-config";
 import { rolePermissions } from "#/utils/org/permissions";
-import {
-  getSelectedOrgFromQueryClient,
-  getMeFromQueryClient,
-} from "#/utils/query-client-getters";
+import { getSelectedOrganizationIdFromStore } from "#/stores/selected-organization-store";
+import { getMeFromQueryClient } from "#/utils/query-client-getters";
 import { queryClient } from "#/query-client-config";
 import { I18nKey } from "#/i18n/declaration";
 import { amountIsValid } from "#/utils/amount-is-valid";
-
-function TempChip({
-  children,
-  ...props
-}: React.PropsWithChildren<{ "data-testid": string }>) {
-  return (
-    <div
-      // eslint-disable-next-line react/jsx-props-no-spreading
-      {...props}
-      style={{ minWidth: "100px" }}
-      data-openhands-chip
-      className="bg-[#FFE165] px-4 rounded-[100px] text-black text-lg text-center font-semibold"
-    >
-      {children}
-    </div>
-  );
-}
-
-interface TempInteractiveChipProps {
-  onClick: () => void;
-}
-
-function TempInteractiveChip({
-  children,
-  onClick,
-}: React.PropsWithChildren<TempInteractiveChipProps>) {
-  return (
-    <div
-      onClick={onClick}
-      className="bg-[#E4E4E4] px-2 rounded-[100px] text-black text-sm text-center font-semibold cursor-pointer"
-    >
-      {children}
-    </div>
-  );
-}
-
-function TempButton({
-  children,
-  onClick,
-  type,
-  variant = "primary",
-}: React.PropsWithChildren<{
-  onClick?: () => void;
-  type: "button" | "submit";
-  variant?: "primary" | "secondary";
-}>) {
-  return (
-    <button
-      className={cn(
-        "flex-1 py-3 rounded text-sm text-center font-semibold cursor-pointer",
-        variant === "primary" && "bg-[#F3CE49] text-black",
-        variant === "secondary" && "bg-[#737373] text-white",
-      )}
-      type={type === "submit" ? "submit" : "button"}
-      onClick={onClick}
-    >
-      {children}
-    </button>
-  );
-}
+import { useUpdateOrganization } from "#/hooks/mutation/use-update-organization";
+import { useDeleteOrganization } from "#/hooks/mutation/use-delete-organization";
+import { CreditsChip } from "#/ui/credits-chip";
+import { InteractiveChip } from "#/ui/interactive-chip";
 
 interface ChangeOrgNameModalProps {
   onClose: () => void;
@@ -87,15 +28,7 @@ interface ChangeOrgNameModalProps {
 
 function ChangeOrgNameModal({ onClose }: ChangeOrgNameModalProps) {
   const { t } = useTranslation();
-  const { orgId } = useSelectedOrganizationId();
-  const qClient = useQueryClient();
-
-  const { mutate: updateOrganization } = useMutation({
-    mutationFn: (name: string) => {
-      if (!orgId) throw new Error("Organization ID is required");
-      return organizationService.updateOrganization({ orgId, name });
-    },
-  });
+  const { mutate: updateOrganization } = useUpdateOrganization();
 
   const formAction = (formData: FormData) => {
     const orgName = formData.get("org-name")?.toString();
@@ -103,7 +36,6 @@ function ChangeOrgNameModal({ onClose }: ChangeOrgNameModalProps) {
     if (orgName?.trim()) {
       updateOrganization(orgName, {
         onSuccess: () => {
-          qClient.invalidateQueries({ queryKey: ["organizations", orgId] });
           onClose();
         },
       });
@@ -153,20 +85,7 @@ function DeleteOrgConfirmationModal({
   onClose,
 }: DeleteOrgConfirmationModalProps) {
   const { t } = useTranslation();
-  const qClient = useQueryClient();
-  const navigate = useNavigate();
-  const { orgId, setOrgId } = useSelectedOrganizationId();
-  const { mutate: deleteOrganization } = useMutation({
-    mutationFn: () => {
-      if (!orgId) throw new Error("Organization ID is required");
-      return organizationService.deleteOrganization({ orgId });
-    },
-    onSuccess: () => {
-      qClient.invalidateQueries({ queryKey: ["organizations"] });
-      setOrgId(null);
-      navigate("/");
-    },
-  });
+  const { mutate: deleteOrganization } = useDeleteOrganization();
 
   return (
     <div data-testid="delete-org-confirmation">
@@ -273,10 +192,17 @@ function AddCreditsModal({ onClose }: AddCreditsModalProps) {
         </div>
 
         <div className="flex gap-2">
-          <TempButton type="submit">{t(I18nKey.ORG$NEXT)}</TempButton>
-          <TempButton type="button" onClick={onClose} variant="secondary">
+          <BrandButton type="submit" variant="primary" className="flex-1 py-3">
+            {t(I18nKey.ORG$NEXT)}
+          </BrandButton>
+          <BrandButton
+            type="button"
+            onClick={onClose}
+            variant="secondary"
+            className="flex-1 py-3"
+          >
             {t(I18nKey.BUTTON$CANCEL)}
-          </TempButton>
+          </BrandButton>
         </div>
       </form>
     </ModalBackdrop>
@@ -284,7 +210,7 @@ function AddCreditsModal({ onClose }: AddCreditsModalProps) {
 }
 
 export const clientLoader = async () => {
-  const selectedOrgId = getSelectedOrgFromQueryClient();
+  const selectedOrgId = getSelectedOrganizationIdFromStore();
   let me = getMeFromQueryClient(selectedOrgId);
 
   if (!me && selectedOrgId) {
@@ -292,7 +218,7 @@ export const clientLoader = async () => {
     queryClient.setQueryData(["organizations", selectedOrgId, "me"], me);
   }
 
-  if (!me || me.role === "user") {
+  if (!me || me.role === "member") {
     // if user is USER role, redirect to user settings
     return redirect("/settings/user");
   }
@@ -305,6 +231,7 @@ function ManageOrg() {
   const { data: me } = useMe();
   const { data: organization } = useOrganization();
   const { data: organizationPaymentInfo } = useOrganizationPaymentInfo();
+  const { data: config } = useConfig();
 
   const [addCreditsFormVisible, setAddCreditsFormVisible] =
     React.useState(false);
@@ -319,6 +246,7 @@ function ManageOrg() {
     !!me && rolePermissions[me.role].includes("delete_organization");
   const canAddCredits =
     !!me && rolePermissions[me.role].includes("add_credits");
+  const isBillingHidden = config?.FEATURE_FLAGS?.HIDE_BILLING;
 
   return (
     <div
@@ -336,23 +264,25 @@ function ManageOrg() {
         />
       )}
 
-      <div className="flex flex-col gap-2">
-        <span className="text-white text-xs font-semibold ml-1">
-          {t(I18nKey.ORG$CREDITS)}
-        </span>
-        <div className="flex items-center gap-2">
-          <TempChip data-testid="available-credits">
-            {organization?.balance}
-          </TempChip>
-          {canAddCredits && (
-            <TempInteractiveChip onClick={() => setAddCreditsFormVisible(true)}>
-              {t(I18nKey.ORG$ADD)}
-            </TempInteractiveChip>
-          )}
+      {!isBillingHidden && (
+        <div className="flex flex-col gap-2">
+          <span className="text-white text-xs font-semibold ml-1">
+            {t(I18nKey.ORG$CREDITS)}
+          </span>
+          <div className="flex items-center gap-2">
+            <CreditsChip testId="available-credits">
+              {organization?.credits}
+            </CreditsChip>
+            {canAddCredits && (
+              <InteractiveChip onClick={() => setAddCreditsFormVisible(true)}>
+                {t(I18nKey.ORG$ADD)}
+              </InteractiveChip>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
-      {addCreditsFormVisible && (
+      {addCreditsFormVisible && !isBillingHidden && (
         <AddCreditsModal onClose={() => setAddCreditsFormVisible(false)} />
       )}
 
@@ -380,21 +310,23 @@ function ManageOrg() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-2 w-sm">
-        <span className="text-white text-xs font-semibold ml-1">
-          {t(I18nKey.ORG$BILLING_INFORMATION)}
-        </span>
+      {!isBillingHidden && (
+        <div className="flex flex-col gap-2 w-sm">
+          <span className="text-white text-xs font-semibold ml-1">
+            {t(I18nKey.ORG$BILLING_INFORMATION)}
+          </span>
 
-        <span
-          data-testid="billing-info"
-          className={cn(
-            "text-sm p-3 bg-base rounded text-[#A3A3A3]",
-            "flex items-center justify-between",
-          )}
-        >
-          {organizationPaymentInfo?.cardNumber}
-        </span>
-      </div>
+          <span
+            data-testid="billing-info"
+            className={cn(
+              "text-sm p-3 bg-base rounded text-[#A3A3A3]",
+              "flex items-center justify-between",
+            )}
+          >
+            {organizationPaymentInfo?.cardNumber}
+          </span>
+        </div>
+      )}
 
       {canDeleteOrg && (
         <button
