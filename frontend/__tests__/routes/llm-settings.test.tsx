@@ -33,6 +33,12 @@ vi.mock("#/hooks/query/use-is-authed", () => ({
   useIsAuthed: () => mockUseIsAuthed(),
 }));
 
+// Mock useMe hook
+const mockUseMe = vi.fn();
+vi.mock("#/hooks/query/use-me", () => ({
+  useMe: () => mockUseMe(),
+}));
+
 const renderLlmSettingsScreen = (orgId: string | null = null) => {
   const queryClient = new QueryClient();
   if (orgId) {
@@ -59,6 +65,23 @@ beforeEach(() => {
 
   // Default mock for useIsAuthed - returns authenticated by default
   mockUseIsAuthed.mockReturnValue({ data: true, isLoading: false });
+
+  // Default mock for useMe - returns owner role by default (full access)
+  mockUseMe.mockReturnValue({
+    data: {
+      org_id: "1",
+      user_id: "99",
+      email: "owner@example.com",
+      role: "owner",
+      status: "active",
+      llm_api_key: "",
+      max_iterations: 20,
+      llm_model: "",
+      llm_api_key_for_byor: null,
+      llm_base_url: "",
+    },
+    isLoading: false,
+  });
 });
 
 describe("Content", () => {
@@ -1178,28 +1201,46 @@ describe("Status toasts", () => {
 });
 
 describe("Role-based permissions", () => {
-  let getConfigSpy: ReturnType<typeof vi.spyOn>;
-  let getMeSpy: ReturnType<typeof vi.spyOn>;
+  const getConfigSpy = vi.spyOn(OptionService, "getConfig");
+  const getMeSpy = vi.spyOn(organizationService, "getMe");
 
   beforeEach(() => {
-    // Mock config to enable SaaS mode (required for useMe hook)
-    getConfigSpy = vi.spyOn(OptionService, "getConfig");
+    // @ts-expect-error - only return APP_MODE for these tests
     getConfigSpy.mockResolvedValue({
       APP_MODE: "saas",
     });
-
-    // Mock organization service getMe
-    getMeSpy = vi.spyOn(organizationService, "getMe");
   });
 
   describe("User role (read-only)", () => {
     beforeEach(() => {
       // Mock user role
       getMeSpy.mockResolvedValue({
-        id: "99",
+        org_id: "2",
+        user_id: "99",
         email: "user@example.com",
-        role: "user",
+        role: "member",
         status: "active",
+        llm_api_key: "",
+        max_iterations: 20,
+        llm_model: "",
+        llm_api_key_for_byor: null,
+        llm_base_url: "",
+      });
+      // Mock useMe hook to return member role
+      mockUseMe.mockReturnValue({
+        data: {
+          org_id: "2",
+          user_id: "99",
+          email: "user@example.com",
+          role: "member",
+          status: "active",
+          llm_api_key: "",
+          max_iterations: 20,
+          llm_model: "",
+          llm_api_key_for_byor: null,
+          llm_base_url: "",
+        },
+        isLoading: false,
       });
     });
 
@@ -1275,16 +1316,16 @@ describe("Role-based permissions", () => {
       }
     });
 
-    it("should disable submit button", async () => {
+    it("should not render submit button", async () => {
       // Arrange
       renderLlmSettingsScreen("2");
 
       // Act
       await screen.findByTestId("llm-settings-screen");
-      const submitButton = screen.getByTestId("submit-button");
+      const submitButton = screen.queryByTestId("submit-button");
 
       // Assert
-      expect(submitButton).toBeDisabled();
+      expect(submitButton).not.toBeInTheDocument();
     });
 
     it("should allow toggling between basic and advanced views", async () => {
@@ -1350,10 +1391,32 @@ describe("Role-based permissions", () => {
     beforeEach(() => {
       // Mock owner role
       getMeSpy.mockResolvedValue({
-        id: "99",
+        org_id: "1",
+        user_id: "99",
         email: "owner@example.com",
         role: "owner",
         status: "active",
+        llm_api_key: "",
+        max_iterations: 20,
+        llm_model: "",
+        llm_api_key_for_byor: null,
+        llm_base_url: "",
+      });
+      // Mock useMe hook to return owner role
+      mockUseMe.mockReturnValue({
+        data: {
+          org_id: "1",
+          user_id: "99",
+          email: "owner@example.com",
+          role: "owner",
+          status: "active",
+          llm_api_key: "",
+          max_iterations: 20,
+          llm_model: "",
+          llm_api_key_for_byor: null,
+          llm_base_url: "",
+        },
+        isLoading: false,
       });
     });
 
@@ -1490,10 +1553,32 @@ describe("Role-based permissions", () => {
     beforeEach(() => {
       // Mock admin role
       getMeSpy.mockResolvedValue({
-        id: "99",
+        org_id: "3",
+        user_id: "99",
         email: "admin@example.com",
         role: "admin",
         status: "active",
+        llm_api_key: "",
+        max_iterations: 20,
+        llm_model: "",
+        llm_api_key_for_byor: null,
+        llm_base_url: "",
+      });
+      // Mock useMe hook to return admin role
+      mockUseMe.mockReturnValue({
+        data: {
+          org_id: "3",
+          user_id: "99",
+          email: "admin@example.com",
+          role: "admin",
+          status: "active",
+          llm_api_key: "",
+          max_iterations: 20,
+          llm_model: "",
+          llm_api_key_for_byor: null,
+          llm_base_url: "",
+        },
+        isLoading: false,
       });
     });
 

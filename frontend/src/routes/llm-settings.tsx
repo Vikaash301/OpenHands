@@ -759,17 +759,19 @@ function LlmSettingsScreen() {
           )}
         </div>
 
-        <div className="flex gap-6 p-6 justify-end">
-          <BrandButton
-            testId="submit-button"
-            type="submit"
-            variant="primary"
-            isDisabled={isReadOnly || !formIsDirty || isPending}
-          >
-            {!isPending && t("SETTINGS$SAVE_CHANGES")}
-            {isPending && t("SETTINGS$SAVING")}
-          </BrandButton>
-        </div>
+        {!isReadOnly && (
+          <div className="flex gap-6 p-6 justify-end">
+            <BrandButton
+              testId="submit-button"
+              type="submit"
+              variant="primary"
+              isDisabled={!formIsDirty || isPending}
+            >
+              {!isPending && t("SETTINGS$SAVE_CHANGES")}
+              {isPending && t("SETTINGS$SAVING")}
+            </BrandButton>
+          </div>
+        )}
       </form>
     </div>
   );
